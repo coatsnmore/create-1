@@ -2,9 +2,10 @@
 
 'use strict';
 
-var stage, circleContainer, player, up, down, left, right;
+var stage, circleContainer, player, up, down, left, right, floor, maxFloor;
+floor = maxFloor = 250;
 
-function resetControls(){
+function resetControls() {
   up = false;
   down = false;
   left = false;
@@ -12,29 +13,51 @@ function resetControls(){
 }
 resetControls();
 
-function init() {
-  stage = new createjs.Stage('demoCanvas');
-
+function createPlayer() {
   player = new createjs.Container();
   var body = new createjs.Shape();
   body.graphics.beginFill('red').drawRect(0, 0, 10, 10);
 
   circleContainer = new createjs.Container();
 
+  player.x = 300;
+  player.y = floor;
+  player.addChild(body);
+  stage.addChild(player);
+
+  player.on('tick', function(event) {
+    var tickerEvent = event;
+    var delta = tickerEvent.delta;
+
+    if (up) {
+      player.y -= delta / 1000 * 1000;
+    } else if (left) {
+      player.x -= delta / 1000 * 500;
+    } else if (right) {
+      player.x += delta / 1000 * 500;
+    } else {
+      //gravity
+      if (player.y < floor) {
+        player.y += delta / 1000 * 500;
+      }
+    }
+  });
+}
+
+function createCircle() {
   var line = new createjs.Shape();
   line.graphics.setStrokeStyle(3);
   line.graphics.beginStroke('yellow');
   line.graphics.moveTo(0, 20);
   line.graphics.lineTo(0, 40);
   line.graphics.endStroke();
+  line.name = 'line';
 
   var little = new createjs.Shape();
   little.graphics.beginFill('red').drawCircle(0, 0, 10);
 
   var circle = new createjs.Shape();
   circle.graphics.beginFill('black').drawCircle(0, 0, 40);
-
-  var floor = 250;
 
   //order is important
   circleContainer.x = 50;
@@ -44,58 +67,65 @@ function init() {
   circleContainer.addChild(line);
   stage.addChild(circleContainer);
 
-  player.x = 300;
-  player.y = floor;
-  player.addChild(body);
-  stage.addChild(player);
-
   // Stage will pass delta when it calls stage.update(arg)
   // which will pass them to tick event handlers for us in time based animation.
   circleContainer.on('tick', function(event) {
     var tickerEvent = event;
     var delta = tickerEvent.delta;
+    // var line = circleContainer.getChildByName('line');
     line.rotation += delta / 1000 * 100;
   });
+}
 
-  // var upTime = 3;
-  var upActive = false;
-  function upTimeout (){
-      upActive = false;
-  }
+function createObstacles(){
+  var obstacles = new createjs.Container();
 
-  player.on('tick', function(event){
+  var o1 = new createjs.Shape();
+  o1.graphics.beginFill('blue').drawRect(0, 0, 100, -100);
+
+  var o2 = new createjs.Shape();
+  o2.graphics.beginFill('blue').drawRect(100, 0, 100, -150);
+
+  var o3 = new createjs.Shape();
+  o3.graphics.beginFill('blue').drawRect(200, 0, 100, -100);
+
+  var o4 = new createjs.Shape();
+  o4.graphics.beginFill('blue').drawRect(300, 0, 100, -150);
+
+  obstacles.x = 400;
+  obstacles.y = floor + 100;
+  obstacles.addChild(o1);
+  obstacles.addChild(o2);
+  obstacles.addChild(o3);
+  obstacles.addChild(o4);
+  stage.addChild(obstacles);
+
+  obstacles.on('tick', function(event) {
     var tickerEvent = event;
     var delta = tickerEvent.delta;
-
-    if(up){
-      var vy = player.y -= delta / 1000 * 1000;
-      // player.y -= delta / 1000 * 1000;
-      // player.y += 50
-      console.log('vy: ' + vy);
-    } else if (left){
-      player.x -= delta / 1000 * 500;
-    } else if (right){
-      player.x += delta / 1000 * 500;
-    } else {
-      //gravity
-      if(player.y < floor){
-        // upActive = true;
-        // setTimeout(upTimeout, 1000);
-        player.y += delta / 1000 * 100;
-      }
-    }
+    obstacles.x -= delta / 1000 * 50;
   });
+}
+
+function init() {
+  stage = new createjs.Stage('demoCanvas');
+
+  createPlayer();
+  createCircle();
+  createObstacles();
 
   createjs.Ticker.on('tick', tick);
 }
 
 function handleHitObjects() {
-  var objectsHit = stage.getObjectsUnderPoint(stage.mouseX, stage.mouseY, 0);
+
+  //circle
+  var mouseHits = stage.getObjectsUnderPoint(stage.mouseX, stage.mouseY, 0);
   var circleHit = false;
 
-  // console.log('circleHit: ' + objectsHit.length);
-  for (var i = 0; i < objectsHit.length; i++) {
-    var o = objectsHit[i];
+  for (var i = 0; i < mouseHits.length; i++) {
+    var o = mouseHits[i];
+    console.log('name: ' + o.name);
     if (o.parent === circleContainer) {
       circleHit = true;
     }
@@ -109,14 +139,9 @@ function tick(event) {
   stage.update(event);
   resetControls();
   // printMouse();
-  // countTimers();
 }
 
-// function countTimers(){
-//   up
-// }
-
-function printMouse(){
+function printMouse() {
   console.log('stage.mouseX: ' + stage.mouseX);
   console.log('stage.mouseY: ' + stage.mouseY);
   console.log('player.y: ' + player.y);
