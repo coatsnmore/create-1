@@ -2,68 +2,22 @@
 
 'use strict';
 
-// var stage, output;
-//
-//     function init() {
-//       stage = new createjs.Stage('demoCanvas');
-//
-//       // to get onMouseOver & onMouseOut events, we need to enable them on the stage:
-//       stage.enableMouseOver();
-//
-//       output = new createjs.Text('Test press, click, doubleclick, mouseover, and mouseout', '14px Arial');
-//       output.x = output.y = 10;
-//       stage.addChild(output);
-//
-//       var circle = new createjs.Shape();
-//       circle.graphics.beginFill('red').drawCircle(0, 0, 50);
-//       circle.x = circle.y = 100;
-//       circle.name = 'circle';
-//       stage.addChild(circle);
-//
-//       var square = new createjs.Shape();
-//       square.graphics.beginFill('green').drawRect(-50, -50, 100, 100);
-//       square.x = 250;
-//       square.y = 100;
-//       square.name = 'square';
-//       stage.addChild(square);
-//
-//       // add a handler for all the events we're interested in:
-//       circle.on('click', handleMouseEvent);
-//       circle.on('dblclick', handleMouseEvent);
-//       circle.on('mouseover', handleMouseEvent);
-//       circle.on('mouseout', handleMouseEvent);
-//
-//       square.on('click', handleMouseEvent);
-//       square.on('dblclick', handleMouseEvent);
-//       square.on('mouseover', handleMouseEvent);
-//       square.on('mouseout', handleMouseEvent);
-//
-//       stage.update();
-//       createjs.Ticker.addEventListener('tick', stage);
-//     }
-//
-//     function handleMouseEvent(evt) {
-//       output.text = 'evt.target: ' + evt.target + ', evt.type: ' + evt.type;
-//
-//       if(evt.type === 'mouseover'){
-//         console.log('blue pls');
-//         // evt.target.graphics.beginFill('blue');
-//         evt.target.rotation += 5;
-//       }
-//
-//       // to save CPU, we're only updating when we need to, instead of on a tick:1
-//       stage.update();
-//     }
-var stage, circleContainer, player;
+var stage, circleContainer, player, up, down, left, right;
+
+function resetControls(){
+  up = false;
+  down = false;
+  left = false;
+  right = false;
+}
+resetControls();
 
 function init() {
   stage = new createjs.Stage('demoCanvas');
 
   player = new createjs.Container();
   var body = new createjs.Shape();
-  body.graphics.beginFill('red').drawRect(100, 35, 5, 5);
-  body.y = 50;
-  body.x = 50;
+  body.graphics.beginFill('red').drawRect(0, 0, 10, 10);
 
   circleContainer = new createjs.Container();
 
@@ -73,22 +27,25 @@ function init() {
   line.graphics.moveTo(0, 20);
   line.graphics.lineTo(0, 40);
   line.graphics.endStroke();
-  line.y = 50;
 
   var little = new createjs.Shape();
   little.graphics.beginFill('red').drawCircle(0, 0, 10);
-  little.y = 50;
 
   var circle = new createjs.Shape();
   circle.graphics.beginFill('black').drawCircle(0, 0, 40);
-  circle.y = 50;
+
+  var floor = 250;
 
   //order is important
+  circleContainer.x = 50;
+  circleContainer.y = floor;
   circleContainer.addChild(circle);
   circleContainer.addChild(little);
   circleContainer.addChild(line);
   stage.addChild(circleContainer);
 
+  player.x = 300;
+  player.y = floor;
   player.addChild(body);
   stage.addChild(player);
 
@@ -97,13 +54,37 @@ function init() {
   circleContainer.on('tick', function(event) {
     var tickerEvent = event;
     var delta = tickerEvent.delta;
-    circleContainer.x += delta / 1000 * 100;
     line.rotation += delta / 1000 * 100;
-    if (circleContainer.x > stage.canvas.width) {
-      circleContainer.x = 0;
-    }
   });
 
+  // var upTime = 3;
+  var upActive = false;
+  function upTimeout (){
+      upActive = false;
+  }
+
+  player.on('tick', function(event){
+    var tickerEvent = event;
+    var delta = tickerEvent.delta;
+
+    if(up){
+      var vy = player.y -= delta / 1000 * 1000;
+      // player.y -= delta / 1000 * 1000;
+      // player.y += 50
+      console.log('vy: ' + vy);
+    } else if (left){
+      player.x -= delta / 1000 * 500;
+    } else if (right){
+      player.x += delta / 1000 * 500;
+    } else {
+      //gravity
+      if(player.y < floor){
+        // upActive = true;
+        // setTimeout(upTimeout, 1000);
+        player.y += delta / 1000 * 100;
+      }
+    }
+  });
 
   createjs.Ticker.on('tick', tick);
 }
@@ -126,4 +107,54 @@ function handleHitObjects() {
 function tick(event) {
   handleHitObjects();
   stage.update(event);
+  resetControls();
+  // printMouse();
+  // countTimers();
 }
+
+// function countTimers(){
+//   up
+// }
+
+function printMouse(){
+  console.log('stage.mouseX: ' + stage.mouseX);
+  console.log('stage.mouseY: ' + stage.mouseY);
+  console.log('player.y: ' + player.y);
+}
+
+window.onkeydown = function(e) {
+  // color = createjs.Graphics.getRGB(0xFFFFFF * Math.random(), 1);
+  // console.log('which: ' + e.which);
+  // 38 up
+  // 40 down
+  // 37 left
+  // 39 right
+  switch (e.which) {
+    case 38:
+      up = true;
+      down = false;
+      left = false;
+      right = false;
+      break;
+    case 39:
+      up = false;
+      down = false;
+      left = false;
+      right = true;
+      break;
+    case 40:
+      up = false;
+      down = true;
+      left = false;
+      right = false;
+      break;
+    case 37:
+      up = false;
+      down = false;
+      left = true;
+      right = false;
+      break;
+  }
+
+  e.preventDefault();
+};
