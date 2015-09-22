@@ -2,8 +2,9 @@
 
 'use strict';
 
-var stage, circleContainer, player, up, down, left, right, floor, maxFloor;
+var stage, circleContainer, player, up, down, left, right, floor, maxFloor, obstacles, lose, start;
 floor = maxFloor = 250;
+lose = false;
 
 function resetControls() {
   up = false;
@@ -15,6 +16,7 @@ resetControls();
 
 function createPlayer() {
   player = new createjs.Container();
+  player.name = 'player';
   var body = new createjs.Shape();
   body.graphics.beginFill('red').drawRect(0, 0, 10, 10);
 
@@ -30,15 +32,17 @@ function createPlayer() {
     var delta = tickerEvent.delta;
 
     if (up) {
-      player.y -= delta / 1000 * 1000;
+      player.y -= delta / 1000 * 100;
     } else if (left) {
-      player.x -= delta / 1000 * 500;
+      player.x -= delta / 1000 * 100;
     } else if (right) {
-      player.x += delta / 1000 * 500;
+      player.x += delta / 1000 * 100;
+    } else if (down) {
+      player.y += delta / 1000 * 100;
     } else {
       //gravity
       if (player.y < floor) {
-        player.y += delta / 1000 * 500;
+        // player.y += delta / 1000 * 500;
       }
     }
   });
@@ -72,25 +76,29 @@ function createCircle() {
   circleContainer.on('tick', function(event) {
     var tickerEvent = event;
     var delta = tickerEvent.delta;
-    // var line = circleContainer.getChildByName('line');
     line.rotation += delta / 1000 * 100;
   });
 }
 
-function createObstacles(){
-  var obstacles = new createjs.Container();
+function createObstacles() {
+  obstacles = new createjs.Container();
+  obstacles.name = 'obstacles';
 
   var o1 = new createjs.Shape();
-  o1.graphics.beginFill('blue').drawRect(0, 0, 100, -100);
+  o1.graphics.beginFill('blue').drawRect(0, 0, 50, -100);
+  o1.name = 'o1';
 
   var o2 = new createjs.Shape();
-  o2.graphics.beginFill('blue').drawRect(100, 0, 100, -150);
+  o2.graphics.beginFill('blue').drawRect(100, -100, 50, -50);
+  o2.name = 'o2';
 
   var o3 = new createjs.Shape();
-  o3.graphics.beginFill('blue').drawRect(200, 0, 100, -100);
+  o3.graphics.beginFill('blue').drawRect(200, 0, 50, -100);
+  o3.name = 'o3';
 
   var o4 = new createjs.Shape();
-  o4.graphics.beginFill('blue').drawRect(300, 0, 100, -150);
+  o4.graphics.beginFill('blue').drawRect(300, -150, 50, -50);
+  o4.name = 'o4';
 
   obstacles.x = 400;
   obstacles.y = floor + 100;
@@ -104,12 +112,35 @@ function createObstacles(){
     var tickerEvent = event;
     var delta = tickerEvent.delta;
     obstacles.x -= delta / 1000 * 50;
+
+    // obstacles.rotation -= delta / 1000 * 5;
+
+    // spin em all
+    // console.log('obstacles.children: ' + obstacles.children);
+    // console.log('obstacles.children.length: ' + obstacles.children.length);
+    // for (var i = 0; i < obstacles.children.length; i++){
+    //   var o = obstacles.children[i];
+    //   console.log('o: ' + o);
+    //   o.rotation += delta / 1000 * 50;
+    // }
+
+
+    if (obstacles.x <= 0) {
+      obstacles.x = 500;
+    }
   });
 }
 
+function cleanObjects (){
+  stage.removeChild(stage.getChildByName('player'));
+  // stage.removeChild(stage.getChildByName('circleContainer'));
+}
+
+// Game Loop
 function init() {
   stage = new createjs.Stage('demoCanvas');
 
+  // cleanObjects();
   createPlayer();
   createCircle();
   createObstacles();
@@ -131,14 +162,44 @@ function handleHitObjects() {
     }
   }
 
-  circleHit ? circleContainer.alpha = 0.5 : circleContainer.alpha = 1;
+  circleContainer.alpha = circleHit ? 0.5 : 1;
+
+  //player hit stage
+  var playerhits = stage.getObjectsUnderPoint(player.x, player.y, 0);
+  var playerHit = false;
+
+  for (var j = 0; j < playerhits.length; j++) {
+    o = playerhits[j];
+    // console.log('name: ' + o.name);
+    if (o.parent === obstacles) {
+      playerHit = true;
+    }
+  }
+
+  obstacles.alpha = playerHit ? 0.5 : 1;
+  lose = playerHit ? true : false;
 }
 
 function tick(event) {
+  testLose();
   handleHitObjects();
   stage.update(event);
   resetControls();
-  // printMouse();
+  printMouse();
+}
+
+function testLose() {
+  console.log('lose' + lose);
+  var loseLabel = new createjs.Text('Lose', '48px Arial', '#F00');
+  loseLabel.x = loseLabel.y = 10;
+  loseLabel.alpha = 0.5;
+  loseLabel.name = 'loseLabel';
+
+  if (lose) {
+    stage.addChild(loseLabel);
+  } else {
+    stage.removeChild(stage.getChildByName('loseLabel'));
+  }
 }
 
 function printMouse() {
