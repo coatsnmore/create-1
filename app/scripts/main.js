@@ -227,7 +227,13 @@ function createObstacles() {
 }
 
 function createStart(){
-  start = new createjs.Text('Click to Start', '48px Arial', '#F00');
+  start = new createjs.Container();
+  var startText = new createjs.Text('Click to Start', '48px Arial', '#F00');
+  var startBox = new createjs.Shape();
+  startBox.graphics.beginFill('white').drawRect(0, 0, 290, 50);
+
+  start.addChild(startBox);
+  start.addChild(startText);
   start.name = 'start';
   start.x = 200;
   start.y = 150;
