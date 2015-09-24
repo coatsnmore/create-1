@@ -227,7 +227,7 @@ function createObstacles() {
 }
 
 function createStart(){
-  start = new createjs.Text('Start', '48px Arial', '#F00');
+  start = new createjs.Text('Click to Start', '48px Arial', '#F00');
   start.name = 'start';
   start.x = 200;
   start.y = 150;
@@ -249,6 +249,8 @@ function init() {
   createCircle();
   createHealth();
   createStart();
+
+  addStart();
 
   createjs.Ticker.on('tick', tick);
 }
@@ -330,6 +332,7 @@ function testLose() {
 function addStart(){
   stage.addChild(start);
   createjs.Ticker.paused = true;
+  // stage.tick();
 
   start.on('click', function (event){
     // console.log('start clicked');
