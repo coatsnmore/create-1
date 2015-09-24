@@ -124,7 +124,7 @@ gulp.task('serve', ['styles', 'fonts'], () => {
   gulp.watch('app/scripts/**/*.js', ['lint']);
 });
 
-gulp.task('serve:dist', () => {
+gulp.task('serve:dist', ['build'], () => {
   browserSync({
     notify: false,
     port: 9000,
