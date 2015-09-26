@@ -2,10 +2,11 @@
 
 'use strict';
 
-var stage, circleContainer, player, up, down, left, right, floor, maxFloor, obstacles, lose, start, health, FULL_HEALTH;
+var stage, circleContainer, player, up, down, left, right, floor, maxFloor, obstacles, lose, start, health, FULL_HEALTH, timer;
 floor = maxFloor = 250;
 lose = false;
 FULL_HEALTH = 25;
+timer = 0;
 
 function resetControls() {
   up = false;
@@ -15,14 +16,14 @@ function resetControls() {
 }
 resetControls();
 
-function createHealth(){
+function createHealth() {
   var bar = new createjs.Shape();
 
   bar.name = 'health';
   // bar.graphics.beginFill('red').drawRect(50, 50, 5, player.health);
 
-  bar.on('tick', function (event){
-    if(event.paused){
+  bar.on('tick', function(event) {
+    if (event.paused) {
       return;
     }
 
@@ -50,7 +51,7 @@ function createPlayer() {
   stage.addChild(player);
 
   player.on('tick', function(event) {
-    if(event.paused){
+    if (event.paused) {
       return;
     }
 
@@ -74,13 +75,13 @@ function createPlayer() {
   });
 
 
-  player.explode = function (){
+  player.explode = function() {
     var little, circle;
 
     little = player.getChildByName('littleExplode');
     circle = player.getChildByName('bigExplode');
 
-    if (!little){
+    if (!little) {
       little = new createjs.Shape();
       little.alpha = 1;
     }
@@ -90,7 +91,7 @@ function createPlayer() {
     little.graphics.drawCircle(5, 5, 10);
     little.name = 'littleExplode';
 
-    if (!circle){
+    if (!circle) {
       circle = new createjs.Shape();
       circle.alpha = 1;
     }
@@ -104,7 +105,7 @@ function createPlayer() {
     player.addChild(circle);
   };
 
-  player.notExplode = function (){
+  player.notExplode = function() {
     var little = player.getChildByName('littleExplode');
     var big = player.getChildByName('bigExplode');
 
@@ -200,7 +201,7 @@ function createObstacles() {
   stage.addChild(obstacles);
 
   obstacles.on('tick', function(event) {
-    if(event.paused){
+    if (event.paused) {
       return;
     }
 
@@ -226,7 +227,7 @@ function createObstacles() {
   });
 }
 
-function createStart(){
+function createStart() {
   start = new createjs.Container();
   var startText = new createjs.Text('Click to Start', '48px Arial', '#F00');
   var startBox = new createjs.Shape();
@@ -294,8 +295,11 @@ function handleHitObjects() {
 }
 
 function tick(event) {
-  testLose();
-  handleHitObjects();
+  if(!createjs.Ticker.paused){
+    testLose();
+    handleHitObjects();
+
+  }
   stage.update(event);
   resetControls();
   // printMouse();
@@ -305,7 +309,7 @@ function tick(event) {
 function testLose() {
   // console.log('lose: ' + lose);
   // console.log('health: ' + player.health);
-  var loseLabel, killedLabel;
+  var loseLabel, killedLabel, timerLabel;
 
   loseLabel = new createjs.Text('Lose', '48px Arial', '#F00');
   loseLabel.x = 50;
@@ -319,6 +323,8 @@ function testLose() {
   killedLabel.alpha = 0.5;
   killedLabel.name = 'killedLabel';
 
+
+  // lose
   if (lose) {
     stage.addChild(loseLabel);
     player.explode();
@@ -328,19 +334,28 @@ function testLose() {
     stage.removeChild(stage.getChildByName('loseLabel'));
   }
 
-  if(player.health <= 0){
-    stage.addChild(killedLabel);
+  // killed
+  if (player.health <= 0) {
+    timerLabel = new createjs.Text('You lasted: ' + timer, '48px Arial', '#F00');
+    timerLabel.x = 50;
+    timerLabel.y = 50;
+    timerLabel.alpha = 0.5;
+    timerLabel.name = 'timerLabel';
+    stage.addChild(timerLabel);
+
+    // stage.addChild(killedLabel);
     stage.removeChild(stage.getChildByName('loseLabel'));
+
     addStart();
   }
 }
 
-function addStart(){
+function addStart() {
   stage.addChild(start);
   createjs.Ticker.paused = true;
   // stage.tick();
 
-  start.on('click', function (event){
+  start.on('click', function(event) {
     // console.log('start clicked');
     start.clicked = true;
     createjs.Ticker.paused = false;
@@ -348,7 +363,19 @@ function addStart(){
     stage.removeChild(stage.getChildByName('start'));
     stage.removeChild(stage.getChildByName('killedLabel'));
     stage.removeChild(stage.getChildByName('loseLabel'));
+    stage.removeChild(stage.getChildByName('timerLabel'));
+
+    startTimer();
   });
+}
+
+function startTimer() {
+  var timerStart = new Date();
+
+  setInterval(function() {
+    timer = Math.round((new Date() - timerStart) / 1000, 0);
+    console.log('timer: ' + timer);
+  }, 1000);
 }
 
 function printMouse() {
