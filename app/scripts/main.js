@@ -2,11 +2,19 @@
 
 'use strict';
 
-var stage, circleContainer, player, up, down, left, right, floor, maxFloor, obstacles, lose, start, health, FULL_HEALTH, timer;
+var stage, circleContainer, player, up, down, left,
+  right, floor, maxFloor, obstacles, lose, start, health,
+  FULL_HEALTH, timer, timerInterval, bullets, activeBullets, fire,
+  MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT;
+
 floor = maxFloor = 250;
 lose = false;
 FULL_HEALTH = 25;
 timer = 0;
+activeBullets = [];
+activeBulletCount = 0;
+MAX_BULLETS = 10;
+INDICATOR_HEIGHT = 100;
 
 function resetControls() {
   up = false;
@@ -27,11 +35,71 @@ function createHealth() {
       return;
     }
 
+    var height = (player.health * INDICATOR_HEIGHT) / FULL_HEALTH;
+
     bar.graphics.clear();
-    bar.graphics.beginFill('red').drawRect(50, 200, 5, -player.health);
+    bar.graphics.beginFill('red').drawRect(50, 200, 5, -height);
   });
 
   stage.addChild(bar);
+}
+
+function createAmmo() {
+  var ammo = new createjs.Shape();
+  ammo.name = 'ammo';
+
+  ammo.on('tick', function(event) {
+    if (event.paused) {
+      return;
+    }
+
+    var height = ((MAX_BULLETS - activeBulletCount) * INDICATOR_HEIGHT) / MAX_BULLETS;
+
+    ammo.graphics.clear();
+    ammo.graphics.beginFill('yellow').drawRect(75, 200, 5, -height);
+  });
+
+  stage.addChild(ammo);
+}
+
+function createBullets() {
+
+  bullets = new createjs.Container();
+
+  for (var i = 0; i < MAX_BULLETS; i++) {
+    var bullet = new createjs.Shape();
+    bullet.name = 'bullet:' + i;
+    bullet.graphics.setStrokeStyle(2);
+    bullet.graphics.beginStroke('white');
+    bullet.graphics.drawCircle(0, 0, 5);
+    bullet.active = false;
+    bullet.alpha = 0;
+    bullets.addChild(bullet);
+  }
+
+  stage.addChild(bullets);
+
+  bullets.on('tick', function(event) {
+    // for all bullets
+    // if active then move
+    // if outside stage, make inactive
+    for (var j = 0; j < bullets.children.length; j++) {
+      var b = bullets.children[j];
+
+      if(b.active){
+        b.alpha = 1;
+        b.x += 5;
+      }
+
+      if (b.x >= 500) {
+        b.active = false;
+        b.x = player.x;
+        b.y = player.y;
+        b.alpha = 0;
+        activeBulletCount--;
+      }
+    }
+  });
 }
 
 function createPlayer() {
@@ -209,18 +277,6 @@ function createObstacles() {
     var delta = tickerEvent.delta;
     obstacles.x -= delta / 1000 * 50;
 
-    // obstacles.rotation -= delta / 1000 * 5;
-
-    // spin em all
-    // console.log('obstacles.children: ' + obstacles.children);
-    // console.log('obstacles.children.length: ' + obstacles.children.length);
-    // for (var i = 0; i < obstacles.children.length; i++){
-    //   var o = obstacles.children[i];
-    //   console.log('o: ' + o);
-    //   o.rotation += delta / 1000 * 50;
-    // }
-
-
     if (obstacles.x <= -500) {
       obstacles.x = 500;
     }
@@ -246,15 +302,18 @@ function cleanObjects() {
   stage.removeChild(stage.getChildByName('circleContainer'));
 }
 
-// Game Loop
+// init
 function init() {
   stage = new createjs.Stage('demoCanvas');
 
   // cleanObjects();
   createPlayer();
   createObstacles();
+  createBullets();
+
   createCircle();
   createHealth();
+  createAmmo();
   createStart();
 
   addStart();
@@ -292,18 +351,59 @@ function handleHitObjects() {
 
   obstacles.alpha = playerHit ? 0.5 : 1;
   lose = playerHit ? true : false;
+
+  // bullets hit stage
+  for(var k = 0; k < bullets.children.length; k++){
+    var b = bullets.children[k];
+
+    if (!b.active){
+      continue;
+    }
+    var bHits = stage.getObjectsUnderPoint(b.x, b.y, 0);
+    var bulletHit = false;
+
+    if(bHits.length > 0){
+      console.log('bhits: ' + bHits.length);
+    }
+
+    for (var z = 0; z < bHits.length; z++) {
+      o = bHits[z];
+      // console.log('name: ' + o.name);
+      if (o.parent === obstacles) {
+        bulletHit = true;
+        console.log('stage hit by bullet');
+        o.alpha = 0;
+        b.active = false;
+        b.x = player.x;
+        b.y = player.y;
+        b.alpha = 0;
+        activeBulletCount--;
+      }
+    }
+  }
 }
 
+// game loop
 function tick(event) {
-  if(!createjs.Ticker.paused){
+  if (!createjs.Ticker.paused) {
     testLose();
+    // playerFire();
     handleHitObjects();
-
   }
   stage.update(event);
   resetControls();
   // printMouse();
   // testStart();
+}
+
+function playerFire() {
+  if (activeBulletCount < MAX_BULLETS) {
+    activeBulletCount++;
+    bullets.children[activeBulletCount].active = true;
+    bullets.children[activeBulletCount].x = player.x;
+    bullets.children[activeBulletCount].y = player.y;
+  }
+  // console.log('activeBulletCount: ' + activeBulletCount);
 }
 
 function testLose() {
@@ -336,12 +436,15 @@ function testLose() {
 
   // killed
   if (player.health <= 0) {
+    // timer
     timerLabel = new createjs.Text('You lasted: ' + timer, '48px Arial', '#F00');
     timerLabel.x = 50;
     timerLabel.y = 50;
     timerLabel.alpha = 0.5;
     timerLabel.name = 'timerLabel';
     stage.addChild(timerLabel);
+
+    clearInterval(timerInterval);
 
     // stage.addChild(killedLabel);
     stage.removeChild(stage.getChildByName('loseLabel'));
@@ -372,9 +475,9 @@ function addStart() {
 function startTimer() {
   var timerStart = new Date();
 
-  setInterval(function() {
+  timerInterval = setInterval(function() {
     timer = Math.round((new Date() - timerStart) / 1000, 0);
-    console.log('timer: ' + timer);
+    // console.log('timer: ' + timer);
   }, 1000);
 }
 
@@ -391,30 +494,43 @@ window.onkeydown = function(e) {
   // 40 down
   // 37 left
   // 39 right
+  // 32 space
   switch (e.which) {
     case 38:
       up = true;
       down = false;
       left = false;
       right = false;
+      fire = false;
       break;
     case 39:
       up = false;
       down = false;
       left = false;
       right = true;
+      fire = false;
       break;
     case 40:
       up = false;
       down = true;
       left = false;
       right = false;
+      fire = false;
       break;
     case 37:
       up = false;
       down = false;
       left = true;
       right = false;
+      fire = false;
+      break;
+    case 32:
+      up = false;
+      down = false;
+      left = false;
+      right = false;
+      fire = true;
+      playerFire();
       break;
   }
 
