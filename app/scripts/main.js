@@ -188,13 +188,23 @@ function createPlayer() {
   player.health = FULL_HEALTH;
 
   var body = new createjs.Shape();
-  body.graphics.beginFill('red').drawRect(0, 0, 10, 10);
+  body.graphics.beginFill('white').drawRect(-2.5, -2.5, 5, 5);
+
+  var shell = new createjs.Shape();
+  shell.graphics.beginFill('purple').drawRect(-5, -5, 10, 10);
+
+  var shell2 = new createjs.Shape();
+  shell2.graphics.beginFill('white').drawRect(-10, -10, 20, 20);
 
   circleContainer = new createjs.Container();
 
   player.x = 200;
   player.y = floor - 50;
+
+  player.addChild(shell2);
+  player.addChild(shell);
   player.addChild(body);
+
   stage.addChild(player);
 
   player.on('tick', function(event) {
@@ -235,7 +245,7 @@ function createPlayer() {
 
     little.graphics.setStrokeStyle(2);
     little.graphics.beginStroke('yellow');
-    little.graphics.drawCircle(5, 5, 10);
+    little.graphics.drawCircle(0, 0, 20);
     little.name = 'littleExplode';
 
     if (!circle) {
@@ -245,7 +255,7 @@ function createPlayer() {
 
     circle.graphics.setStrokeStyle(2);
     circle.graphics.beginStroke('red');
-    circle.graphics.drawCircle(5, 5, 20);
+    circle.graphics.drawCircle(0, 0, 30);
     circle.name = 'bigExplode';
 
     player.addChild(little);
@@ -295,7 +305,7 @@ function createCircle() {
 
 function generateObstacles(){
   var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
-  OBSTACLE_COUNT = 50;
+  OBSTACLE_COUNT = 100;
   SIZE = 20;
 
   obstacles = new createjs.Container();
@@ -309,7 +319,7 @@ function generateObstacles(){
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
-    x = i * 30;
+    x = i * (SIZE + 10);
     y = getRandomInt(0, floor);
     o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE, SIZE, -SIZE);
     o.name = 'o' + i;
@@ -330,8 +340,8 @@ function generateObstacles(){
     var delta = tickerEvent.delta;
     obstacles.x -= delta / 1000 * 50;
 
-    if (obstacles.x <= -500) {
-      obstacles.x = 500;
+    if (obstacles.x <= -(OBSTACLE_COUNT * (SIZE + 10))) {
+      obstacles.x = wall;
     }
   });
 }
