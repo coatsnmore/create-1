@@ -8,6 +8,7 @@ var stage, circleContainer, player, up, down, left,
   MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets, activeOBulletCount;
 
 floor = maxFloor = 250;
+// ceiling =
 lose = false;
 FULL_HEALTH = 25;
 timer = 0;
@@ -66,8 +67,9 @@ function createAmmo() {
 function createObstacleBullets() {
   oBullets = new createjs.Container();
   oBullets.name = 'oBullets';
+  var BULLET_COUNT = 50;
 
-  for (var i = 0; i < 10; i++) {
+  for (var i = 0; i < BULLET_COUNT; i++) {
     var ob = new createjs.Shape();
     ob.name = 'ob:' + i;
     ob.graphics.setStrokeStyle(2);
@@ -99,7 +101,7 @@ function createObstacleBullets() {
       // assign single bullet
       rb.active = true;
       rb.x = obstacles.x + o.leftx;
-      rb.y = obstacles.y - o.middle - o.bottomy;
+      rb.y = obstacles.y + o.middle - o.bottomy;
     }
 
     // animate all bullets
@@ -275,6 +277,49 @@ function createCircle() {
   });
 }
 
+function generateObstacles(){
+  var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
+  OBSTACLE_COUNT = 50;
+  SIZE = 20;
+
+  obstacles = new createjs.Container();
+  obstacles.name = 'obstacles';
+  obstacles.x = 400;
+  obstacles.y = floor;
+  stage.addChild(obstacles);
+
+  for (var i = 0; i < OBSTACLE_COUNT; i++){
+    // r  = getRandomInt(0, );
+    randomColor = colors.map[getRandomInt(0, colors.count)];
+
+    o = new createjs.Shape();
+    x = i * 30;
+    y = getRandomInt(0, floor);
+    o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE, SIZE, -SIZE);
+    o.name = 'o' + i;
+    o.leftx = x;
+    o.middle = SIZE / 2;
+    o.bottomy = y;
+    o.color = randomColor;
+    obstacles.addChild(o);
+  }
+
+  // move obstacles
+  obstacles.on('tick', function(event) {
+    if (event.paused) {
+      return;
+    }
+
+    var tickerEvent = event;
+    var delta = tickerEvent.delta;
+    obstacles.x -= delta / 1000 * 50;
+
+    if (obstacles.x <= -500) {
+      obstacles.x = 500;
+    }
+  });
+}
+
 function createObstacles() {
   obstacles = new createjs.Container();
   obstacles.name = 'obstacles';
@@ -344,7 +389,7 @@ function createObstacles() {
   o9.bottomy = 100;
 
   obstacles.x = 400;
-  obstacles.y = floor; //- 100;
+  obstacles.y = floor;
   obstacles.addChild(o1);
   obstacles.addChild(o2);
   obstacles.addChild(o3);
@@ -397,7 +442,8 @@ function init() {
 
   // cleanObjects();
   createPlayer();
-  createObstacles();
+  // createObstacles();
+  generateObstacles();
   createBullets();
   createObstacleBullets();
 
@@ -483,7 +529,7 @@ function tick(event) {
   }
   stage.update(event);
   resetControls();
-  // printMouse();
+  printMouse();
   // testStart();
 }
 
@@ -626,4 +672,15 @@ window.onkeydown = function(e) {
   }
 
   e.preventDefault();
+};
+
+var colors = {
+  'map': {
+    1: 'red',
+    2: 'blue',
+    3: 'yellow',
+    4: 'cyan',
+    5: 'green'
+  },
+  'count': 5
 };
