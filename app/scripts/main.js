@@ -1,16 +1,15 @@
-/*eslint no-unused-vars: 1, no-use-before-define: 0, no-unused-expressions: 0*/
+/*eslint no-unused-vars: 1, no-use-before-define: 0, no-unused-expressions: 0, no-loop-func: 1*/
 
 'use strict';
 
-var stage, circleContainer, player, up, down, left,
-  right, floor, maxFloor, obstacles, lose, start,
-  FULL_HEALTH, timer, timerInterval, bullets, activeBullets, fire,
+var stage, circleContainer, player, floor, obstacles, lose, start,
+  FULL_HEALTH, timer, timerInterval, bullets, activeBullets,
   MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets,
   activeOBulletCount, wall, score, keys;
 
 keys = [];
 wall = 500;
-floor = maxFloor = 250;
+floor = 250;
 lose = false;
 FULL_HEALTH = 25;
 timer = 0;
@@ -20,15 +19,6 @@ MAX_BULLETS = 10;
 INDICATOR_HEIGHT = 100;
 score = 0;
 
-function resetControls() {
-  up = false;
-  down = false;
-  left = false;
-  right = false;
-  fire = false;
-}
-resetControls();
-
 function createScore() {
   var scoreLabel;
   scoreLabel = new createjs.Text('Score: ' + score, '24px Arial', 'white');
@@ -37,6 +27,17 @@ function createScore() {
   scoreLabel.alpha = 0.9;
   scoreLabel.name = 'scoreLabel';
   stage.addChild(scoreLabel);
+}
+
+function createInterfaceContainer(){
+  var ui = new createjs.Shape();
+
+  ui.name = 'ui';
+  // bar.graphics.beginFill('red').drawRect(50, 50, 5, player.health);
+  ui.graphics.beginFill('white').drawRect(15, floor + 10, 50, -INDICATOR_HEIGHT - 20);
+  ui.alpha = 0.5;
+
+  stage.addChild(ui);
 }
 
 function createHealth() {
@@ -53,7 +54,7 @@ function createHealth() {
     var height = (player.health * INDICATOR_HEIGHT) / FULL_HEALTH;
 
     bar.graphics.clear();
-    bar.graphics.beginFill('red').drawRect(50, 200, 5, -height);
+    bar.graphics.beginFill('red').drawRect(25, floor, 5, -height);
   });
 
   stage.addChild(bar);
@@ -71,7 +72,7 @@ function createAmmo() {
     var height = ((MAX_BULLETS - activeBulletCount) * INDICATOR_HEIGHT) / MAX_BULLETS;
 
     ammo.graphics.clear();
-    ammo.graphics.beginFill('yellow').drawRect(75, 200, 5, -height);
+    ammo.graphics.beginFill('black').drawRect(50, floor, 5, -height);
   });
 
   stage.addChild(ammo);
@@ -217,7 +218,7 @@ function createPlayer() {
     }
 
     var tickerEvent = event;
-    var delta = tickerEvent.delta;
+    // var delta = tickerEvent.delta;
 
     // 38 up
     // 40 down
@@ -336,9 +337,9 @@ function createCircle() {
 }
 
 function generateObstacles() {
-  var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
+  var o, x, y, SIZE, randomColor, OBSTACLE_COUNT;
   OBSTACLE_COUNT = 100;
-  SIZE = 20;
+  SIZE = 50;
 
   obstacles = new createjs.Container();
   obstacles.name = 'obstacles';
@@ -347,7 +348,6 @@ function generateObstacles() {
   stage.addChild(obstacles);
 
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
-    // r  = getRandomInt(0, );
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
@@ -360,6 +360,16 @@ function generateObstacles() {
     o.bottomy = y;
     o.color = randomColor;
     obstacles.addChild(o);
+
+    o.explode = function() {
+      console.log('explode');
+      this.alpha = 0.75;
+    };
+
+    o.notExplode = function() {
+      console.log('not explode');
+      this.alpha = 0;
+    };
   }
 
   // move obstacles
@@ -374,13 +384,6 @@ function generateObstacles() {
 
     var randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
 
-    // if(randomObstacleIndex % 2 === 1){
-    //   obstacles[randomObstacleIndex].y -= delta / 1000 * 10;
-    // }
-    //else {
-    //   obstacles[randomObstacleIndex].y += delta / 1000 * 10;
-    // }
-
     if (obstacles.x <= -(OBSTACLE_COUNT * (SIZE + 10))) {
       obstacles.x = wall;
     }
@@ -388,7 +391,7 @@ function generateObstacles() {
 }
 
 function generateBackgroundObstacles() {
-  var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
+  var o, x, y, SIZE, randomColor, OBSTACLE_COUNT;
   OBSTACLE_COUNT = 50;
   SIZE = 10;
 
@@ -399,7 +402,6 @@ function generateBackgroundObstacles() {
   stage.addChild(bObstacles);
 
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
-    // r  = getRandomInt(0, );
     randomColor = 'white'; //colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
@@ -443,7 +445,6 @@ function generateFarBackgroundObstacles() {
   stage.addChild(bObstacles);
 
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
-    // r  = getRandomInt(0, );
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
@@ -586,11 +587,6 @@ function createStart() {
   start.clicked = false;
 }
 
-function cleanObjects() {
-  stage.removeChild(stage.getChildByName('player'));
-  stage.removeChild(stage.getChildByName('circleContainer'));
-}
-
 // basically reset
 function createStage() {
   score = 0;
@@ -605,7 +601,7 @@ function createStage() {
   createObstacleBullets();
 
   // interface
-  createCircle();
+  createInterfaceContainer();
   createHealth();
   createAmmo();
   createStart();
@@ -623,23 +619,24 @@ function init() {
 function handleHitObjects() {
 
   //circle
-  var mouseHits = stage.getObjectsUnderPoint(stage.mouseX, stage.mouseY, 0);
-  var circleHit = false;
-
-  for (var i = 0; i < mouseHits.length; i++) {
-    var o = mouseHits[i];
-    // console.log('name: ' + o.name);
-    if (o.parent === circleContainer) {
-      circleHit = true;
-    }
-  }
-
-  circleContainer.alpha = circleHit ? 0.5 : 1;
+  // var mouseHits = stage.getObjectsUnderPoint(stage.mouseX, stage.mouseY, 0);
+  // var circleHit = false;
+  //
+  // for (var i = 0; i < mouseHits.length; i++) {
+  //   var o = mouseHits[i];
+  //   // console.log('name: ' + o.name);
+  //   if (o.parent === circleContainer) {
+  //     circleHit = true;
+  //   }
+  // }
+  //
+  // circleContainer.alpha = circleHit ? 0.5 : 1;
 
   // stage hit player
   var playerhits = stage.getObjectsUnderPoint(player.x, player.y, 0);
   var playerHit = false;
 
+  var o;
   for (var j = 0; j < playerhits.length; j++) {
     o = playerhits[j];
     if (o.parent === obstacles) {
@@ -662,16 +659,15 @@ function handleHitObjects() {
     var bHits = stage.getObjectsUnderPoint(b.x, b.y, 0);
     var bulletHit = false;
 
-    if (bHits.length > 0) {
-      console.log('bhits: ' + bHits.length);
-    }
-
     for (var z = 0; z < bHits.length; z++) {
       o = bHits[z];
       // console.log('name: ' + o.name);
       if (o.parent === obstacles) {
         bulletHit = true;
         console.log('stage hit by bullet');
+        // o.alpha = 0;
+        o.explode();
+        o.notExplode();
         o.alpha = 0;
         b.active = false;
         b.x = player.x;
@@ -692,13 +688,10 @@ function tick(event) {
     updateScore();
   }
   stage.update(event);
-  resetControls();
 }
 
 function updateScore() {
-  // stage.removeChildByName('scoreLabel');
   var scoreLabel = stage.getChildByName('scoreLabel');
-  console.log('scoreLabel: ' + scoreLabel);
   stage.removeChild(scoreLabel);
   createScore();
 }
@@ -752,7 +745,7 @@ function addStart() {
   createjs.Ticker.paused = true;
   // stage.tick();
 
-  start.on('click', function(event) {
+  start.on('click', function() {
     start.clicked = true;
     createjs.Ticker.paused = false;
     player.health = FULL_HEALTH;
@@ -775,56 +768,6 @@ function printMouse() {
   console.log('stage.mouseY: ' + stage.mouseY);
   console.log('player.y: ' + player.y);
 }
-
-// window.onkeydown = function(e) {
-//   // color = createjs.Graphics.getRGB(0xFFFFFF * Math.random(), 1);
-//   // console.log('which: ' + e.which);
-//   // 38 up
-//   // 40 down
-//   // 37 left
-//   // 39 right
-//   // 32 space
-//   switch (e.which) {
-//     case 38:
-//       up = true;
-//       down = false;
-//       left = false;
-//       right = false;
-//       fire = false;
-//       break;
-//     case 39:
-//       up = false;
-//       down = false;
-//       left = false;
-//       right = true;
-//       fire = false;
-//       break;
-//     case 40:
-//       up = false;
-//       down = true;
-//       left = false;
-//       right = false;
-//       fire = false;
-//       break;
-//     case 37:
-//       up = false;
-//       down = false;
-//       left = true;
-//       right = false;
-//       fire = false;
-//       break;
-//     case 32:
-//       up = false;
-//       down = false;
-//       left = false;
-//       right = false;
-//       fire = true;
-//       playerFire();
-//       break;
-//   }
-//
-//   e.preventDefault();
-// };
 
 document.body.addEventListener('keydown', function(e) {
   keys[e.which] = true;
