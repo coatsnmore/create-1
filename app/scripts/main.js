@@ -6,8 +6,9 @@ var stage, circleContainer, player, up, down, left,
   right, floor, maxFloor, obstacles, lose, start,
   FULL_HEALTH, timer, timerInterval, bullets, activeBullets, fire,
   MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets,
-  activeOBulletCount, wall, score;
+  activeOBulletCount, wall, score, keys;
 
+keys = [];
 wall = 500;
 floor = maxFloor = 250;
 lose = false;
@@ -28,7 +29,7 @@ function resetControls() {
 }
 resetControls();
 
-function createScore(){
+function createScore() {
   var scoreLabel;
   scoreLabel = new createjs.Text('Score: ' + score, '24px Arial', 'white');
   scoreLabel.x = 50;
@@ -109,7 +110,7 @@ function createObstacleBullets() {
     var ri = getRandomInt(0, oBullets.children.length);
     var rb = oBullets.children[ri];
 
-    if(o.alpha > 0 && !rb.active && (obstacles.x + o.leftx) < wall){
+    if (o.alpha > 0 && !rb.active && (obstacles.x + o.leftx) < wall) {
       // assign single bullet
       rb.active = true;
       rb.x = obstacles.x + o.leftx;
@@ -155,7 +156,7 @@ function createBullets() {
   stage.addChild(bullets);
 
   bullets.on('tick', function(event) {
-    if(event.paused){
+    if (event.paused) {
       return;
     }
 
@@ -182,6 +183,11 @@ function createBullets() {
 }
 
 function createPlayer() {
+  var FRICTION = 0.8,
+    SPEED = 4,
+    vX = 0,
+    vY = 0;
+
   player = new createjs.Container();
 
   player.name = 'player';
@@ -195,8 +201,6 @@ function createPlayer() {
 
   var shell2 = new createjs.Shape();
   shell2.graphics.beginFill('white').drawRect(-10, -10, 20, 20);
-
-  circleContainer = new createjs.Container();
 
   player.x = 200;
   player.y = floor - 50;
@@ -215,22 +219,39 @@ function createPlayer() {
     var tickerEvent = event;
     var delta = tickerEvent.delta;
 
-    if (up) {
-      player.y -= delta / 1000 * 100;
-    } else if (left) {
-      player.x -= delta / 1000 * 100;
-    } else if (right) {
-      player.x += delta / 1000 * 100;
-    } else if (down) {
-      player.y += delta / 1000 * 100;
-    } else {
-      //gravity
-      if (player.y < floor) {
-        // player.y += delta / 1000 * 500;
+    // 38 up
+    // 40 down
+    // 37 left
+    // 39 right
+    if (keys[38]) {
+      if (vY > -SPEED) {
+        vY--;
       }
     }
-  });
 
+    if (keys[40]) {
+      if (vY < SPEED) {
+        vY++;
+      }
+    }
+    if (keys[39]) {
+      if (vX < SPEED) {
+        vX++;
+      }
+    }
+    if (keys[37]) {
+      if (vX > -SPEED) {
+        vX--;
+      }
+    }
+
+    vY *= FRICTION;
+    player.y += vY;
+
+    vX *= FRICTION;
+    player.x += vX;
+
+  });
 
   player.explode = function() {
     var little, circle;
@@ -269,9 +290,20 @@ function createPlayer() {
     player.removeChild(little);
     player.removeChild(big);
   };
+
+  player.fire = function() {
+    if (activeBulletCount < MAX_BULLETS) {
+      activeBulletCount++;
+      bullets.children[activeBulletCount].active = true;
+      bullets.children[activeBulletCount].x = player.x;
+      bullets.children[activeBulletCount].y = player.y;
+    }
+  };
 }
 
 function createCircle() {
+  circleContainer = new createjs.Container();
+
   var line = new createjs.Shape();
   line.graphics.setStrokeStyle(3);
   line.graphics.beginStroke('yellow');
@@ -303,7 +335,7 @@ function createCircle() {
   });
 }
 
-function generateObstacles(){
+function generateObstacles() {
   var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
   OBSTACLE_COUNT = 100;
   SIZE = 20;
@@ -314,7 +346,7 @@ function generateObstacles(){
   obstacles.y = floor;
   stage.addChild(obstacles);
 
-  for (var i = 0; i < OBSTACLE_COUNT; i++){
+  for (var i = 0; i < OBSTACLE_COUNT; i++) {
     // r  = getRandomInt(0, );
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
@@ -340,13 +372,22 @@ function generateObstacles(){
     var delta = tickerEvent.delta;
     obstacles.x -= delta / 1000 * 50;
 
+    var randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
+
+    // if(randomObstacleIndex % 2 === 1){
+    //   obstacles[randomObstacleIndex].y -= delta / 1000 * 10;
+    // }
+    //else {
+    //   obstacles[randomObstacleIndex].y += delta / 1000 * 10;
+    // }
+
     if (obstacles.x <= -(OBSTACLE_COUNT * (SIZE + 10))) {
       obstacles.x = wall;
     }
   });
 }
 
-function generateBackgroundObstacles(){
+function generateBackgroundObstacles() {
   var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
   OBSTACLE_COUNT = 50;
   SIZE = 10;
@@ -357,9 +398,9 @@ function generateBackgroundObstacles(){
   bObstacles.y = floor;
   stage.addChild(bObstacles);
 
-  for (var i = 0; i < OBSTACLE_COUNT; i++){
+  for (var i = 0; i < OBSTACLE_COUNT; i++) {
     // r  = getRandomInt(0, );
-    randomColor = colors.map[getRandomInt(0, colors.count)];
+    randomColor = 'white'; //colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
     x = i * 30;
@@ -390,7 +431,7 @@ function generateBackgroundObstacles(){
   });
 }
 
-function generateFarBackgroundObstacles(){
+function generateFarBackgroundObstacles() {
   var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
   OBSTACLE_COUNT = 50;
   SIZE = 200;
@@ -401,7 +442,7 @@ function generateFarBackgroundObstacles(){
   bObstacles.y = floor;
   stage.addChild(bObstacles);
 
-  for (var i = 0; i < OBSTACLE_COUNT; i++){
+  for (var i = 0; i < OBSTACLE_COUNT; i++) {
     // r  = getRandomInt(0, );
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
@@ -551,7 +592,7 @@ function cleanObjects() {
 }
 
 // basically reset
-function createStage(){
+function createStage() {
   score = 0;
   stage.removeAllChildren();
 
@@ -603,7 +644,7 @@ function handleHitObjects() {
     o = playerhits[j];
     if (o.parent === obstacles) {
       playerHit = true;
-    } else if (o.parent === oBullets){
+    } else if (o.parent === oBullets) {
       playerHit = true;
     }
   }
@@ -654,22 +695,12 @@ function tick(event) {
   resetControls();
 }
 
-function updateScore(){
+function updateScore() {
   // stage.removeChildByName('scoreLabel');
   var scoreLabel = stage.getChildByName('scoreLabel');
   console.log('scoreLabel: ' + scoreLabel);
   stage.removeChild(scoreLabel);
   createScore();
-}
-
-function playerFire() {
-  if (activeBulletCount < MAX_BULLETS) {
-    activeBulletCount++;
-    bullets.children[activeBulletCount].active = true;
-    bullets.children[activeBulletCount].x = player.x;
-    bullets.children[activeBulletCount].y = player.y;
-  }
-  // console.log('activeBulletCount: ' + activeBulletCount);
 }
 
 function testLose() {
@@ -745,55 +776,69 @@ function printMouse() {
   console.log('player.y: ' + player.y);
 }
 
-window.onkeydown = function(e) {
-  // color = createjs.Graphics.getRGB(0xFFFFFF * Math.random(), 1);
-  // console.log('which: ' + e.which);
-  // 38 up
-  // 40 down
-  // 37 left
-  // 39 right
-  // 32 space
-  switch (e.which) {
-    case 38:
-      up = true;
-      down = false;
-      left = false;
-      right = false;
-      fire = false;
-      break;
-    case 39:
-      up = false;
-      down = false;
-      left = false;
-      right = true;
-      fire = false;
-      break;
-    case 40:
-      up = false;
-      down = true;
-      left = false;
-      right = false;
-      fire = false;
-      break;
-    case 37:
-      up = false;
-      down = false;
-      left = true;
-      right = false;
-      fire = false;
-      break;
-    case 32:
-      up = false;
-      down = false;
-      left = false;
-      right = false;
-      fire = true;
-      playerFire();
-      break;
-  }
+// window.onkeydown = function(e) {
+//   // color = createjs.Graphics.getRGB(0xFFFFFF * Math.random(), 1);
+//   // console.log('which: ' + e.which);
+//   // 38 up
+//   // 40 down
+//   // 37 left
+//   // 39 right
+//   // 32 space
+//   switch (e.which) {
+//     case 38:
+//       up = true;
+//       down = false;
+//       left = false;
+//       right = false;
+//       fire = false;
+//       break;
+//     case 39:
+//       up = false;
+//       down = false;
+//       left = false;
+//       right = true;
+//       fire = false;
+//       break;
+//     case 40:
+//       up = false;
+//       down = true;
+//       left = false;
+//       right = false;
+//       fire = false;
+//       break;
+//     case 37:
+//       up = false;
+//       down = false;
+//       left = true;
+//       right = false;
+//       fire = false;
+//       break;
+//     case 32:
+//       up = false;
+//       down = false;
+//       left = false;
+//       right = false;
+//       fire = true;
+//       playerFire();
+//       break;
+//   }
+//
+//   e.preventDefault();
+// };
 
+document.body.addEventListener('keydown', function(e) {
+  keys[e.which] = true;
+
+  if (e.which === 32) {
+    player.fire();
+  }
   e.preventDefault();
-};
+});
+
+document.body.addEventListener('keyup', function(e) {
+  keys[e.keyCode] = false;
+  e.preventDefault();
+});
 
 var colors = {
   'map': {
