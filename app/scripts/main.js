@@ -5,10 +5,11 @@
 var stage, circleContainer, player, up, down, left,
   right, floor, maxFloor, obstacles, lose, start,
   FULL_HEALTH, timer, timerInterval, bullets, activeBullets, fire,
-  MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets, activeOBulletCount;
+  MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets,
+  activeOBulletCount, wall, score;
 
+wall = 500;
 floor = maxFloor = 250;
-// ceiling =
 lose = false;
 FULL_HEALTH = 25;
 timer = 0;
@@ -16,6 +17,7 @@ activeBullets = [];
 activeBulletCount = activeOBulletCount = 0;
 MAX_BULLETS = 10;
 INDICATOR_HEIGHT = 100;
+score = 0;
 
 function resetControls() {
   up = false;
@@ -25,6 +27,16 @@ function resetControls() {
   fire = false;
 }
 resetControls();
+
+function createScore(){
+  var scoreLabel;
+  scoreLabel = new createjs.Text('Score: ' + score, '24px Arial', 'white');
+  scoreLabel.x = 50;
+  scoreLabel.y = 10;
+  scoreLabel.alpha = 0.9;
+  scoreLabel.name = 'scoreLabel';
+  stage.addChild(scoreLabel);
+}
 
 function createHealth() {
   var bar = new createjs.Shape();
@@ -97,7 +109,7 @@ function createObstacleBullets() {
     var ri = getRandomInt(0, oBullets.children.length);
     var rb = oBullets.children[ri];
 
-    if(o.alpha > 0 && !rb.active){
+    if(o.alpha > 0 && !rb.active && (obstacles.x + o.leftx) < wall){
       // assign single bullet
       rb.active = true;
       rb.x = obstacles.x + o.leftx;
@@ -143,6 +155,10 @@ function createBullets() {
   stage.addChild(bullets);
 
   bullets.on('tick', function(event) {
+    if(event.paused){
+      return;
+    }
+
     // for all bullets
     // if active then move
     // if outside stage, make inactive
@@ -320,6 +336,94 @@ function generateObstacles(){
   });
 }
 
+function generateBackgroundObstacles(){
+  var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
+  OBSTACLE_COUNT = 50;
+  SIZE = 10;
+
+  var bObstacles = new createjs.Container();
+  bObstacles.name = 'obstacles';
+  bObstacles.x = 400;
+  bObstacles.y = floor;
+  stage.addChild(bObstacles);
+
+  for (var i = 0; i < OBSTACLE_COUNT; i++){
+    // r  = getRandomInt(0, );
+    randomColor = colors.map[getRandomInt(0, colors.count)];
+
+    o = new createjs.Shape();
+    x = i * 30;
+    y = getRandomInt(0, floor);
+    o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE, SIZE, -SIZE);
+    o.name = 'o' + i;
+    o.leftx = x;
+    o.middle = SIZE / 2;
+    o.bottomy = y;
+    o.color = randomColor;
+    o.alpha = 0.5;
+    bObstacles.addChild(o);
+  }
+
+  // move obstacles
+  bObstacles.on('tick', function(event) {
+    if (event.paused) {
+      return;
+    }
+
+    var tickerEvent = event;
+    var delta = tickerEvent.delta;
+    bObstacles.x -= delta / 1000 * 25;
+
+    if (bObstacles.x <= -500) {
+      bObstacles.x = 500;
+    }
+  });
+}
+
+function generateFarBackgroundObstacles(){
+  var o, x, y, r, SIZE, randomColor, OBSTACLE_COUNT;
+  OBSTACLE_COUNT = 50;
+  SIZE = 200;
+
+  var bObstacles = new createjs.Container();
+  bObstacles.name = 'obstacles';
+  bObstacles.x = 400;
+  bObstacles.y = floor;
+  stage.addChild(bObstacles);
+
+  for (var i = 0; i < OBSTACLE_COUNT; i++){
+    // r  = getRandomInt(0, );
+    randomColor = colors.map[getRandomInt(0, colors.count)];
+
+    o = new createjs.Shape();
+    x = i * 30;
+    y = getRandomInt(0, floor);
+    o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE, SIZE, -SIZE);
+    o.name = 'o' + i;
+    o.leftx = x;
+    o.middle = SIZE / 2;
+    o.bottomy = y;
+    o.color = randomColor;
+    o.alpha = 0.25;
+    bObstacles.addChild(o);
+  }
+
+  // move obstacles
+  bObstacles.on('tick', function(event) {
+    if (event.paused) {
+      return;
+    }
+
+    var tickerEvent = event;
+    var delta = tickerEvent.delta;
+    bObstacles.x -= delta / 1000 * 5;
+
+    if (bObstacles.x <= -500) {
+      bObstacles.x = 500;
+    }
+  });
+}
+
 function createObstacles() {
   obstacles = new createjs.Container();
   obstacles.name = 'obstacles';
@@ -436,24 +540,32 @@ function cleanObjects() {
   stage.removeChild(stage.getChildByName('circleContainer'));
 }
 
-// init
-function init() {
-  stage = new createjs.Stage('demoCanvas');
+// basically reset
+function createStage(){
+  score = 0;
+  stage.removeAllChildren();
 
-  // cleanObjects();
+  // game objects
+  generateFarBackgroundObstacles();
+  generateBackgroundObstacles();
   createPlayer();
-  // createObstacles();
   generateObstacles();
   createBullets();
   createObstacleBullets();
 
+  // interface
   createCircle();
   createHealth();
   createAmmo();
   createStart();
+  createScore();
+}
 
+// init
+function init() {
+  stage = new createjs.Stage('demoCanvas');
+  createStage();
   addStart();
-
   createjs.Ticker.on('tick', tick);
 }
 
@@ -489,7 +601,7 @@ function handleHitObjects() {
   obstacles.alpha = playerHit ? 0.5 : 1;
   lose = playerHit ? true : false;
 
-  // bullets hit stage
+  // player bullets hit stage
   for (var k = 0; k < bullets.children.length; k++) {
     var b = bullets.children[k];
 
@@ -515,6 +627,7 @@ function handleHitObjects() {
         b.y = player.y;
         b.alpha = 0;
         activeBulletCount--;
+        score += 25;
       }
     }
   }
@@ -524,13 +637,19 @@ function handleHitObjects() {
 function tick(event) {
   if (!createjs.Ticker.paused) {
     testLose();
-    // playerFire();
     handleHitObjects();
+    updateScore();
   }
   stage.update(event);
   resetControls();
-  printMouse();
-  // testStart();
+}
+
+function updateScore(){
+  // stage.removeChildByName('scoreLabel');
+  var scoreLabel = stage.getChildByName('scoreLabel');
+  console.log('scoreLabel: ' + scoreLabel);
+  stage.removeChild(scoreLabel);
+  createScore();
 }
 
 function playerFire() {
@@ -544,8 +663,6 @@ function playerFire() {
 }
 
 function testLose() {
-  // console.log('lose: ' + lose);
-  // console.log('health: ' + player.health);
   var loseLabel, killedLabel, timerLabel;
 
   loseLabel = new createjs.Text('Lose', '48px Arial', '#F00');
@@ -565,7 +682,7 @@ function testLose() {
   if (lose) {
     stage.addChild(loseLabel);
     player.explode();
-    player.health--;
+    player.health -= 5;
   } else {
     player.notExplode();
     stage.removeChild(stage.getChildByName('loseLabel'));
@@ -573,17 +690,16 @@ function testLose() {
 
   // killed
   if (player.health <= 0) {
-    // timer
-    timerLabel = new createjs.Text('You lasted: ' + timer, '48px Arial', '#F00');
+    // display timer
+    timerLabel = new createjs.Text('You lasted: ' + timer + ' seconds', '24px Arial', 'white');
     timerLabel.x = 50;
     timerLabel.y = 50;
-    timerLabel.alpha = 0.5;
+    timerLabel.alpha = 0.9;
     timerLabel.name = 'timerLabel';
     stage.addChild(timerLabel);
 
     clearInterval(timerInterval);
 
-    // stage.addChild(killedLabel);
     stage.removeChild(stage.getChildByName('loseLabel'));
 
     addStart();
@@ -596,15 +712,10 @@ function addStart() {
   // stage.tick();
 
   start.on('click', function(event) {
-    // console.log('start clicked');
     start.clicked = true;
     createjs.Ticker.paused = false;
     player.health = FULL_HEALTH;
-    stage.removeChild(stage.getChildByName('start'));
-    stage.removeChild(stage.getChildByName('killedLabel'));
-    stage.removeChild(stage.getChildByName('loseLabel'));
-    stage.removeChild(stage.getChildByName('timerLabel'));
-
+    createStage();
     startTimer();
   });
 }
@@ -676,11 +787,13 @@ window.onkeydown = function(e) {
 
 var colors = {
   'map': {
-    1: 'red',
-    2: 'blue',
-    3: 'yellow',
-    4: 'cyan',
-    5: 'green'
+    0: 'red',
+    1: 'blue',
+    2: 'yellow',
+    3: 'cyan',
+    4: 'green',
+    5: 'white',
+    6: 'gray'
   },
-  'count': 5
+  'count': 7
 };
