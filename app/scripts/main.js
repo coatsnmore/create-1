@@ -3,16 +3,16 @@
 'use strict';
 
 var stage, circleContainer, player, up, down, left,
-  right, floor, maxFloor, obstacles, lose, start, health,
+  right, floor, maxFloor, obstacles, lose, start,
   FULL_HEALTH, timer, timerInterval, bullets, activeBullets, fire,
-  MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT;
+  MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets, activeOBulletCount;
 
 floor = maxFloor = 250;
 lose = false;
 FULL_HEALTH = 25;
 timer = 0;
 activeBullets = [];
-activeBulletCount = 0;
+activeBulletCount = activeOBulletCount = 0;
 MAX_BULLETS = 10;
 INDICATOR_HEIGHT = 100;
 
@@ -21,6 +21,7 @@ function resetControls() {
   down = false;
   left = false;
   right = false;
+  fire = false;
 }
 resetControls();
 
@@ -62,6 +63,66 @@ function createAmmo() {
   stage.addChild(ammo);
 }
 
+function createObstacleBullets() {
+  oBullets = new createjs.Container();
+  oBullets.name = 'oBullets';
+
+  for (var i = 0; i < 10; i++) {
+    var ob = new createjs.Shape();
+    ob.name = 'ob:' + i;
+    ob.graphics.setStrokeStyle(2);
+    ob.graphics.beginStroke('red');
+    ob.graphics.drawCircle(0, 0, 5);
+    ob.active = false;
+    oBullets.addChild(ob);
+  }
+
+  stage.addChild(oBullets);
+
+  bullets.on('tick', function(event) {
+    if (event.paused) {
+      return;
+    }
+    // add 1 new active bullet to a random visible obstacle
+    // if active then move
+    // if outside stage, make inactive
+
+    // best effort to find visible obstacle
+    var cLength = obstacles.children.length;
+    var o = obstacles.children[getRandomInt(0, cLength)];
+
+    // best effort to find inactive bullet
+    var ri = getRandomInt(0, oBullets.children.length);
+    var rb = oBullets.children[ri];
+
+    if(o.alpha > 0 && !rb.active){
+      // assign single bullet
+      rb.active = true;
+      rb.x = obstacles.x + o.leftx;
+      rb.y = obstacles.y - o.middle - o.bottomy;
+    }
+
+    // animate all bullets
+    for (var j = 0; j < oBullets.children.length; j++) {
+      var b = oBullets.children[j];
+
+      if (b.active) {
+        b.alpha = 1;
+        b.x -= 5;
+      }
+
+      if (b.x <= -50) {
+        b.active = false;
+        b.alpha = 1.0;
+      }
+    }
+  });
+}
+
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min)) + min;
+}
+
 function createBullets() {
 
   bullets = new createjs.Container();
@@ -86,7 +147,7 @@ function createBullets() {
     for (var j = 0; j < bullets.children.length; j++) {
       var b = bullets.children[j];
 
-      if(b.active){
+      if (b.active) {
         b.alpha = 1;
         b.x += 5;
       }
@@ -113,8 +174,8 @@ function createPlayer() {
 
   circleContainer = new createjs.Container();
 
-  player.x = 300;
-  player.y = floor;
+  player.x = 200;
+  player.y = floor - 50;
   player.addChild(body);
   stage.addChild(player);
 
@@ -221,41 +282,69 @@ function createObstacles() {
   var o1 = new createjs.Shape();
   o1.graphics.beginFill('blue').drawRect(0, 0, 50, -100);
   o1.name = 'o1';
+  o1.leftx = 0;
+  o1.middle = 100 / 2;
+  o1.bottomy = 0;
 
   var o2 = new createjs.Shape();
   o2.graphics.beginFill('yellow').drawRect(100, -100, 50, -50);
   o2.name = 'o2';
+  o2.middle = 50 / 2;
+  o2.leftx = 100;
+  o2.bottomy = 100;
+  // console.log('o2.middle = ' + o2.middle);
 
   var o3 = new createjs.Shape();
   o3.graphics.beginFill('green').drawRect(200, 0, 50, -100);
   o3.name = 'o3';
+  o3.middle = 100 / 2;
+  o3.leftx = 200;
+  o3.bottomy = 0;
 
   var o4 = new createjs.Shape();
   o4.graphics.beginFill('blue').drawRect(300, -150, 50, -50);
   o4.name = 'o4';
+  o4.middle = 50 / 2;
+  o4.leftx = 300;
+  o4.bottomy = 150;
 
   var o5 = new createjs.Shape();
   o5.graphics.beginFill('green').drawRect(400, -150, 50, -50);
   o5.name = 'o5';
+  o5.middle = 50 / 2;
+  o5.leftx = 400;
+  o5.bottomy = 150;
 
   var o6 = new createjs.Shape();
   o6.graphics.beginFill('cyan').drawRect(500, -150, 50, -100);
   o6.name = 'o6';
+  o6.middle = 100 / 2;
+  o6.leftx = 500;
+  o6.bottomy = 150;
 
   var o7 = new createjs.Shape();
   o7.graphics.beginFill('blue').drawRect(600, -100, 50, -150);
   o7.name = 'o7';
+  o7.middle = 150 / 2;
+  o7.leftx = 600;
+  o7.bottomy = 100;
 
   var o8 = new createjs.Shape();
   o8.graphics.beginFill('green').drawRect(700, -100, -50, -50);
   o8.name = 'o8';
+  o8.middle = 50 / 2;
+  o8.leftx = 700;
+  o8.bottomy = 100;
 
   var o9 = new createjs.Shape();
   o9.graphics.beginFill('blue').drawRect(800, -100, 50, -150);
   o9.name = 'o9';
+  o9.middle = 150 / 2;
+  o9.leftx = 800;
+  o9.bottomy = 100;
 
   obstacles.x = 400;
-  obstacles.y = floor + 100;
+  obstacles.y = floor; //- 100;
   obstacles.addChild(o1);
   obstacles.addChild(o2);
   obstacles.addChild(o3);
@@ -310,6 +399,7 @@ function init() {
   createPlayer();
   createObstacles();
   createBullets();
+  createObstacleBullets();
 
   createCircle();
   createHealth();
@@ -337,14 +427,15 @@ function handleHitObjects() {
 
   circleContainer.alpha = circleHit ? 0.5 : 1;
 
-  //player hit stage
+  // stage hit player
   var playerhits = stage.getObjectsUnderPoint(player.x, player.y, 0);
   var playerHit = false;
 
   for (var j = 0; j < playerhits.length; j++) {
     o = playerhits[j];
-    // console.log('name: ' + o.name);
     if (o.parent === obstacles) {
+      playerHit = true;
+    } else if (o.parent === oBullets){
       playerHit = true;
     }
   }
@@ -353,16 +444,16 @@ function handleHitObjects() {
   lose = playerHit ? true : false;
 
   // bullets hit stage
-  for(var k = 0; k < bullets.children.length; k++){
+  for (var k = 0; k < bullets.children.length; k++) {
     var b = bullets.children[k];
 
-    if (!b.active){
+    if (!b.active) {
       continue;
     }
     var bHits = stage.getObjectsUnderPoint(b.x, b.y, 0);
     var bulletHit = false;
 
-    if(bHits.length > 0){
+    if (bHits.length > 0) {
       console.log('bhits: ' + bHits.length);
     }
 
