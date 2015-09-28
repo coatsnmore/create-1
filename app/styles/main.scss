@@ -11,6 +11,28 @@ $icon-font-path: '../fonts/';
   padding: 0.2em 0;
 }
 
+.intro {
+  font: 14px courier;
+}
+
+.intro h1 {
+  font: italic 28px courier;
+}
+
+.intro-section {
+  float: left;
+  max-width: 200px;
+  min-width: 100px;
+  min-height: 300px;
+  margin: 3px;
+  padding: 15px;
+  border: medium dashed black;
+}
+
+.intro-section ol li{
+  margin-bottom: 10px;
+}
+
 /* Space out content a bit */
 body {
   padding-top: 20px;
