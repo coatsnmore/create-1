@@ -5,11 +5,15 @@
 var stage, circleContainer, player, floor, obstacles, lose, start,
   FULL_HEALTH, timer, timerInterval, bullets, activeBullets,
   MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets,
-  activeOBulletCount, wall, score, keys;
+  activeOBulletCount, wall, score, keys, canvas;
+
+canvas = document.getElementById('canvas');
+canvas.width = 800;
+canvas.height = 600;
 
 keys = [];
-wall = 500;
-floor = 250;
+wall = canvas.width;
+floor = canvas.height - 50;
 lose = false;
 FULL_HEALTH = 25;
 timer = 0;
@@ -22,14 +26,14 @@ score = 0;
 function createScore() {
   var scoreLabel;
   scoreLabel = new createjs.Text('Score: ' + score, '24px Arial', 'white');
-  scoreLabel.x = 50;
+  scoreLabel.x = 5;
   scoreLabel.y = 10;
   scoreLabel.alpha = 0.9;
   scoreLabel.name = 'scoreLabel';
   stage.addChild(scoreLabel);
 }
 
-function createInterfaceContainer(){
+function createInterfaceContainer() {
   var ui = new createjs.Shape();
 
   ui.name = 'ui';
@@ -81,7 +85,7 @@ function createAmmo() {
 function createObstacleBullets() {
   oBullets = new createjs.Container();
   oBullets.name = 'oBullets';
-  var BULLET_COUNT = 50;
+  var BULLET_COUNT = 200;
 
   for (var i = 0; i < BULLET_COUNT; i++) {
     var ob = new createjs.Shape();
@@ -112,10 +116,21 @@ function createObstacleBullets() {
     var rb = oBullets.children[ri];
 
     if (o.alpha > 0 && !rb.active && (obstacles.x + o.leftx) < wall) {
+      console.log('o0.x: ' + obstacles.children[0].x + obstacles.x);
+      console.log('o1.x: ' + obstacles.children[1].x + obstacles.x);
+      console.log('player.x: ' + player.x);
+      // console.log('diff: ' + Math.abs(player.y - (obstacles.y + o.y)));
+      // assign to obstacles in line of fire
+      // if (Math.abs(player.y - (obstacles.y + o.y)) < 200 ||
+      //   Math.abs(player.x - (obstacles.x + o.x)) < 200) {
+      //   console.log('line of fire: ' + Math.abs(player.y - (obstacles.y + o.y)));
+      //
+
       // assign single bullet
       rb.active = true;
-      rb.x = obstacles.x + o.leftx;
-      rb.y = obstacles.y + o.middle - o.bottomy;
+      rb.x = obstacles.x + o.x + o.leftx;
+      rb.y = obstacles.y + o.y + o.middle - o.bottomy;
+      // }
     }
 
     // animate all bullets
@@ -337,14 +352,20 @@ function createCircle() {
 }
 
 function generateObstacles() {
-  var o, x, y, SIZE, randomColor, OBSTACLE_COUNT;
-  OBSTACLE_COUNT = 100;
-  SIZE = 50;
+  var o, x, y, SIZE, randomColor, OBSTACLE_COUNT, vX, vY, SPEED, FRICTION;
+  OBSTACLE_COUNT = 200;
+  SIZE = 20;
+  SPEED = 3;
+  FRICTION = 0.8;
+  vX = 0;
+  vY = 0;
 
   obstacles = new createjs.Container();
   obstacles.name = 'obstacles';
   obstacles.x = 400;
   obstacles.y = floor;
+  // obstacles.vX = 0;
+  // obstacles.vY = 0;
   stage.addChild(obstacles);
 
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
@@ -359,6 +380,8 @@ function generateObstacles() {
     o.middle = SIZE / 2;
     o.bottomy = y;
     o.color = randomColor;
+    o.vX = 0;
+    o.vY = 0;
     obstacles.addChild(o);
 
     o.explode = function() {
@@ -380,10 +403,74 @@ function generateObstacles() {
 
     var tickerEvent = event;
     var delta = tickerEvent.delta;
-    obstacles.x -= delta / 1000 * 50;
+
+    // always move to the left
+    // obstacles.x -= delta / 1000 * 50;
+    if (vX < SPEED) {
+      vX++;
+    }
+
+    if (vY < SPEED) {
+      vY++;
+    }
+
+    vX *= FRICTION;
+    obstacles.x -= vX;
 
     var randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
 
+    // randomize movemnt for a few
+    var ro = obstacles.children[randomObstacleIndex];
+    ro.x += vX * SPEED;
+    // if ( ro.vY < SPEED) {
+    //   vY++;
+    // }
+    // ro.y -= ro.vY;
+    // o.y -= delta / 1000 * 500;
+    ro.y -= vY * SPEED;
+
+    // console.log('ro: ' + ro);
+    // console.log('ro.vY: ' + ro.vY);
+    // console.log('ro.y: ' + ro.y);
+
+    randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
+    obstacles.children[randomObstacleIndex].y += delta / 1000 * 500;
+    //
+    // randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
+    // obstacles.children[randomObstacleIndex].x -= delta / 1000 * 50;
+    //
+    // randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
+    // obstacles.children[randomObstacleIndex].x += delta / 1000 * 50;
+
+    // if (keys[38]) {
+    //   if (vY > -SPEED) {
+    //     vY--;
+    //   }
+    // }
+    //
+    // if (keys[40]) {
+    //   if (vY < SPEED) {
+    //     vY++;
+    //   }
+    // }
+    // if (keys[39]) {
+    //   if (vX < SPEED) {
+    //     vX++;
+    //   }
+    // }
+    // if (keys[37]) {
+    //   if (vX > -SPEED) {
+    //     vX--;
+    //   }
+    // }
+    //
+    // vY *= FRICTION;
+    // player.y += vY;
+    //
+    // vX *= FRICTION;
+    // player.x += vX;
+
+    // test for left wall
     if (obstacles.x <= -(OBSTACLE_COUNT * (SIZE + 10))) {
       obstacles.x = wall;
     }
@@ -610,7 +697,7 @@ function createStage() {
 
 // init
 function init() {
-  stage = new createjs.Stage('demoCanvas');
+  stage = new createjs.Stage('canvas');
   createStage();
   addStart();
   createjs.Ticker.on('tick', tick);
@@ -688,6 +775,7 @@ function tick(event) {
     updateScore();
   }
   stage.update(event);
+  // printMouse();
 }
 
 function updateScore() {
@@ -700,7 +788,7 @@ function testLose() {
   var loseLabel, killedLabel, timerLabel;
 
   loseLabel = new createjs.Text('Lose', '48px Arial', '#F00');
-  loseLabel.x = 50;
+  loseLabel.x = 200;
   loseLabel.y = 10;
   loseLabel.alpha = 0.5;
   loseLabel.name = 'loseLabel';
@@ -726,8 +814,8 @@ function testLose() {
   if (player.health <= 0) {
     // display timer
     timerLabel = new createjs.Text('You lasted: ' + timer + ' seconds', '24px Arial', 'white');
-    timerLabel.x = 50;
-    timerLabel.y = 50;
+    timerLabel.x = 200;
+    timerLabel.y = 80;
     timerLabel.alpha = 0.9;
     timerLabel.name = 'timerLabel';
     stage.addChild(timerLabel);
