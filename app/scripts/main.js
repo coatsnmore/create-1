@@ -353,7 +353,7 @@ function createCircle() {
 
 function generateObstacles() {
   var o, x, y, SIZE, randomColor, OBSTACLE_COUNT, vX, vY, SPEED, FRICTION;
-  OBSTACLE_COUNT = 200;
+  OBSTACLE_COUNT = 50;
   SIZE = 20;
   SPEED = 3;
   FRICTION = 0.8;
@@ -368,6 +368,7 @@ function generateObstacles() {
   // obstacles.vY = 0;
   stage.addChild(obstacles);
 
+  // create small
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
@@ -376,6 +377,62 @@ function generateObstacles() {
     y = getRandomInt(0, floor);
     o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE, SIZE, -SIZE);
     o.name = 'o' + i;
+    o.leftx = x;
+    o.middle = SIZE / 2;
+    o.bottomy = y;
+    o.color = randomColor;
+    o.vX = 0;
+    o.vY = 0;
+    obstacles.addChild(o);
+
+    o.explode = function() {
+      console.log('explode');
+      this.alpha = 0.75;
+    };
+
+    o.notExplode = function() {
+      console.log('not explode');
+      this.alpha = 0;
+    };
+  }
+
+  // create another group of tall
+  for (i = 0; i < OBSTACLE_COUNT; i++) {
+    randomColor = colors.map[getRandomInt(0, colors.count)];
+
+    o = new createjs.Shape();
+    x = i * (SIZE + 10);
+    y = getRandomInt(0, floor);
+    o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE * 2, SIZE * 2, -SIZE * 3);
+    o.name = '2o' + i;
+    o.leftx = x;
+    o.middle = SIZE / 2;
+    o.bottomy = y;
+    o.color = randomColor;
+    o.vX = 0;
+    o.vY = 0;
+    obstacles.addChild(o);
+
+    o.explode = function() {
+      console.log('explode');
+      this.alpha = 0.75;
+    };
+
+    o.notExplode = function() {
+      console.log('not explode');
+      this.alpha = 0;
+    };
+  }
+
+  // create another group of long
+  for (i = 0; i < OBSTACLE_COUNT; i++) {
+    randomColor = colors.map[getRandomInt(0, colors.count)];
+
+    o = new createjs.Shape();
+    x = i * (SIZE + 10);
+    y = getRandomInt(0, floor);
+    o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE * 3, SIZE * 3, -SIZE * 2);
+    o.name = '2o' + i;
     o.leftx = x;
     o.middle = SIZE / 2;
     o.bottomy = y;
@@ -761,7 +818,7 @@ function handleHitObjects() {
         b.y = player.y;
         b.alpha = 0;
         activeBulletCount--;
-        score += 25;
+        score += 50;
       }
     }
   }
@@ -784,6 +841,15 @@ function updateScore() {
   createScore();
 }
 
+function playerOutOfBounds(){
+  var ob = false;
+
+  if(player.x <= 0 || player.x >= wall || player.y <= 0 || player.y >= floor + 10){
+    ob = true;
+  }
+  return ob;
+}
+
 function testLose() {
   var loseLabel, killedLabel, timerLabel;
 
@@ -801,7 +867,7 @@ function testLose() {
 
 
   // lose
-  if (lose) {
+  if (lose || playerOutOfBounds()) {
     stage.addChild(loseLabel);
     player.explode();
     player.health -= 5;
@@ -879,7 +945,8 @@ var colors = {
     3: 'cyan',
     4: 'green',
     5: 'white',
-    6: 'gray'
+    6: 'purple',
+    7: 'orange'
   },
-  'count': 7
+  'count': 8
 };
