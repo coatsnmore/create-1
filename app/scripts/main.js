@@ -5,7 +5,7 @@
 var stage, circleContainer, player, floor, obstacles, lose, start,
   FULL_HEALTH, timer, timerInterval, bullets, activeBullets,
   MAX_BULLETS, activeBulletCount, INDICATOR_HEIGHT, oBullets,
-  activeOBulletCount, wall, score, keys, canvas;
+  activeOBulletCount, wall, score, keys, canvas, LEVEL_LENGTH, goals, goalsHit, GOALS;
 
 canvas = document.getElementById('canvas');
 canvas.width = 800;
@@ -22,6 +22,8 @@ activeBulletCount = activeOBulletCount = 0;
 MAX_BULLETS = 10;
 INDICATOR_HEIGHT = 100;
 score = 0;
+goalsHit = 0;
+GOALS = 5;
 
 function createScore() {
   var scoreLabel;
@@ -31,13 +33,20 @@ function createScore() {
   scoreLabel.alpha = 0.9;
   scoreLabel.name = 'scoreLabel';
   stage.addChild(scoreLabel);
+
+  var goalLabel;
+  goalLabel = new createjs.Text('Goals: ' + goalsHit + '/' + GOALS, '24px Arial', 'gold');
+  goalLabel.x = 5;
+  goalLabel.y = 40;
+  goalLabel.alpha = 0.9;
+  goalLabel.name = 'goalLabel';
+  stage.addChild(goalLabel);
 }
 
 function createInterfaceContainer() {
   var ui = new createjs.Shape();
 
   ui.name = 'ui';
-  // bar.graphics.beginFill('red').drawRect(50, 50, 5, player.health);
   ui.graphics.beginFill('white').drawRect(15, floor + 10, 50, -INDICATOR_HEIGHT - 20);
   ui.alpha = 0.5;
 
@@ -116,10 +125,10 @@ function createObstacleBullets() {
     var rb = oBullets.children[ri];
 
     if (o.alpha > 0 && !rb.active && (obstacles.x + o.leftx) < wall) {
-      console.log('o0.x: ' + obstacles.children[0].x + obstacles.x);
-      console.log('o1.x: ' + obstacles.children[1].x + obstacles.x);
-      console.log('player.x: ' + player.x);
-      // console.log('diff: ' + Math.abs(player.y - (obstacles.y + o.y)));
+      // console.log('o0.x: ' + obstacles.children[0].x + obstacles.x);
+      // console.log('o1.x: ' + obstacles.children[1].x + obstacles.x);
+      // console.log('player.x: ' + player.x);
+
       // assign to obstacles in line of fire
       // if (Math.abs(player.y - (obstacles.y + o.y)) < 200 ||
       //   Math.abs(player.x - (obstacles.x + o.x)) < 200) {
@@ -187,7 +196,7 @@ function createBullets() {
         b.x += 5;
       }
 
-      if (b.x >= 500) {
+      if (b.x >= wall) {
         b.active = false;
         b.x = player.x;
         b.y = player.y;
@@ -351,29 +360,74 @@ function createCircle() {
   });
 }
 
+function generateGoals() {
+  var levelLength, SPACE, SIZE, START_X;
+  SPACE = 400;
+  SIZE = 10;
+  START_X = 500;
+  levelLength = LEVEL_LENGTH || 800;
+
+  goals = new createjs.Container();
+  goals.x = START_X;
+  goals.y = floor;
+  stage.addChild(goals);
+
+  // console.log('goal.x: ' + ((levelLength - START_X) / (SIZE + SPACE)));
+
+  for (var i = 0; i < GOALS; i++) {
+    var goal = new createjs.Shape();
+    goal.name = 'goal:' + i;
+    goal.graphics.setStrokeStyle(5);
+    goal.graphics.beginStroke('gold');
+    goal.graphics.drawCircle(0, 0, SIZE);
+    // goal.x = i * ((levelLength - START_X) / (SIZE + SPACE));
+    goal.x = i * (SIZE + SPACE);
+    goal.y = getRandomInt(0, -floor - 10);
+    goals.addChild(goal);
+  }
+
+  goals.on('tick', function(event) {
+    if(event.paused){
+      return;
+    }
+    goals.x -= event.delta / 1000 * 50;
+
+    if (goals.x <= -levelLength) {
+      goals.x = 0;
+    }
+  });
+}
+
 function generateObstacles() {
-  var o, x, y, SIZE, randomColor, OBSTACLE_COUNT, vX, vY, SPEED, FRICTION;
-  OBSTACLE_COUNT = 50;
+  var o, x, y, SIZE, randomColor, OBSTACLE_COUNT, vX, vY, SPEED, FRICTION, OBSTACLE_START_X, VARIATIONS, SPACE;
+  OBSTACLE_START_X = 300;
   SIZE = 20;
+  SPACE = 20;
+  OBSTACLE_COUNT = ((wall - OBSTACLE_START_X) / (SIZE + SPACE)) + (OBSTACLE_START_X / (SIZE + SPACE));
   SPEED = 3;
-  FRICTION = 0.8;
+  FRICTION = 0.9;
   vX = 0;
   vY = 0;
+  VARIATIONS = 3;
+
+  // umm lets make the world longer by some factor
+  OBSTACLE_COUNT *= 2;
 
   obstacles = new createjs.Container();
   obstacles.name = 'obstacles';
-  obstacles.x = 400;
+  obstacles.x = OBSTACLE_START_X;
   obstacles.y = floor;
   // obstacles.vX = 0;
   // obstacles.vY = 0;
   stage.addChild(obstacles);
 
   // create small
+  var obstaclesLength;
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
-    x = i * (SIZE + 10);
+    x = i * (SIZE + SPACE + 10);
     y = getRandomInt(0, floor);
     o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE, SIZE, -SIZE);
     o.name = 'o' + i;
@@ -394,6 +448,9 @@ function generateObstacles() {
       console.log('not explode');
       this.alpha = 0;
     };
+    // save x
+    obstaclesLength = x;
+    LEVEL_LENGTH = x;
   }
 
   // create another group of tall
@@ -401,7 +458,7 @@ function generateObstacles() {
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
-    x = i * (SIZE + 10);
+    x = i * (SIZE + SPACE);
     y = getRandomInt(0, floor);
     o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE * 2, SIZE * 2, -SIZE * 3);
     o.name = '2o' + i;
@@ -429,7 +486,7 @@ function generateObstacles() {
     randomColor = colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
-    x = i * (SIZE + 10);
+    x = i * (SIZE + SPACE);
     y = getRandomInt(0, floor);
     o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE * 3, SIZE * 3, -SIZE * 2);
     o.name = '2o' + i;
@@ -474,61 +531,25 @@ function generateObstacles() {
     vX *= FRICTION;
     obstacles.x -= vX;
 
-    var randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
+    var randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT * VARIATIONS);
 
     // randomize movemnt for a few
     var ro = obstacles.children[randomObstacleIndex];
-    ro.x += vX * SPEED;
-    // if ( ro.vY < SPEED) {
-    //   vY++;
-    // }
-    // ro.y -= ro.vY;
-    // o.y -= delta / 1000 * 500;
-    ro.y -= vY * SPEED;
+    ro.x += vX * (50 * delta / 1000);
+    ro.y -= vY * (50 * delta / 1000);
 
-    // console.log('ro: ' + ro);
-    // console.log('ro.vY: ' + ro.vY);
-    // console.log('ro.y: ' + ro.y);
+    randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT * VARIATIONS);
+    ro = obstacles.children[randomObstacleIndex];
+    ro.x -= vX * (25 * delta / 1000);
+    ro.y += vY * (25 * delta / 1000);
 
-    randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
-    obstacles.children[randomObstacleIndex].y += delta / 1000 * 500;
-    //
-    // randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
-    // obstacles.children[randomObstacleIndex].x -= delta / 1000 * 50;
-    //
-    // randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT);
-    // obstacles.children[randomObstacleIndex].x += delta / 1000 * 50;
-
-    // if (keys[38]) {
-    //   if (vY > -SPEED) {
-    //     vY--;
-    //   }
-    // }
-    //
-    // if (keys[40]) {
-    //   if (vY < SPEED) {
-    //     vY++;
-    //   }
-    // }
-    // if (keys[39]) {
-    //   if (vX < SPEED) {
-    //     vX++;
-    //   }
-    // }
-    // if (keys[37]) {
-    //   if (vX > -SPEED) {
-    //     vX--;
-    //   }
-    // }
-    //
-    // vY *= FRICTION;
-    // player.y += vY;
-    //
-    // vX *= FRICTION;
-    // player.x += vX;
+    randomObstacleIndex = getRandomInt(0, OBSTACLE_COUNT * VARIATIONS);
+    ro = obstacles.children[randomObstacleIndex];
+    ro.x -= vX * (25 * delta / 1000);
+    ro.y += vY * (25 * delta / 1000);
 
     // test for left wall
-    if (obstacles.x <= -(OBSTACLE_COUNT * (SIZE + 10))) {
+    if (obstacles.x <= -obstaclesLength) {
       obstacles.x = wall;
     }
   });
@@ -541,12 +562,13 @@ function generateBackgroundObstacles() {
 
   var bObstacles = new createjs.Container();
   bObstacles.name = 'obstacles';
-  bObstacles.x = 400;
+  bObstacles.x = 10;
   bObstacles.y = floor;
   stage.addChild(bObstacles);
 
+  var backgroundLength;
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
-    randomColor = 'white'; //colors.map[getRandomInt(0, colors.count)];
+    randomColor = colors.map[getRandomInt(0, colors.count)];
 
     o = new createjs.Shape();
     x = i * 30;
@@ -559,6 +581,8 @@ function generateBackgroundObstacles() {
     o.color = randomColor;
     o.alpha = 0.5;
     bObstacles.addChild(o);
+
+    backgroundLength = x;
   }
 
   // move obstacles
@@ -571,8 +595,8 @@ function generateBackgroundObstacles() {
     var delta = tickerEvent.delta;
     bObstacles.x -= delta / 1000 * 25;
 
-    if (bObstacles.x <= -500) {
-      bObstacles.x = 500;
+    if (bObstacles.x <= -backgroundLength) {
+      bObstacles.x = 0;
     }
   });
 }
@@ -620,114 +644,21 @@ function generateFarBackgroundObstacles() {
   });
 }
 
-function createObstacles() {
-  obstacles = new createjs.Container();
-  obstacles.name = 'obstacles';
-
-  var o1 = new createjs.Shape();
-  o1.graphics.beginFill('blue').drawRect(0, 0, 50, -100);
-  o1.name = 'o1';
-  o1.leftx = 0;
-  o1.middle = 100 / 2;
-  o1.bottomy = 0;
-
-  var o2 = new createjs.Shape();
-  o2.graphics.beginFill('yellow').drawRect(100, -100, 50, -50);
-  o2.name = 'o2';
-  o2.middle = 50 / 2;
-  o2.leftx = 100;
-  o2.bottomy = 100;
-  // console.log('o2.middle = ' + o2.middle);
-
-  var o3 = new createjs.Shape();
-  o3.graphics.beginFill('green').drawRect(200, 0, 50, -100);
-  o3.name = 'o3';
-  o3.middle = 100 / 2;
-  o3.leftx = 200;
-  o3.bottomy = 0;
-
-  var o4 = new createjs.Shape();
-  o4.graphics.beginFill('blue').drawRect(300, -150, 50, -50);
-  o4.name = 'o4';
-  o4.middle = 50 / 2;
-  o4.leftx = 300;
-  o4.bottomy = 150;
-
-  var o5 = new createjs.Shape();
-  o5.graphics.beginFill('green').drawRect(400, -150, 50, -50);
-  o5.name = 'o5';
-  o5.middle = 50 / 2;
-  o5.leftx = 400;
-  o5.bottomy = 150;
-
-  var o6 = new createjs.Shape();
-  o6.graphics.beginFill('cyan').drawRect(500, -150, 50, -100);
-  o6.name = 'o6';
-  o6.middle = 100 / 2;
-  o6.leftx = 500;
-  o6.bottomy = 150;
-
-  var o7 = new createjs.Shape();
-  o7.graphics.beginFill('blue').drawRect(600, -100, 50, -150);
-  o7.name = 'o7';
-  o7.middle = 150 / 2;
-  o7.leftx = 600;
-  o7.bottomy = 100;
-
-  var o8 = new createjs.Shape();
-  o8.graphics.beginFill('green').drawRect(700, -100, -50, -50);
-  o8.name = 'o8';
-  o8.middle = 50 / 2;
-  o8.leftx = 700;
-  o8.bottomy = 100;
-
-  var o9 = new createjs.Shape();
-  o9.graphics.beginFill('blue').drawRect(800, -100, 50, -150);
-  o9.name = 'o9';
-  o9.middle = 150 / 2;
-  o9.leftx = 800;
-  o9.bottomy = 100;
-
-  obstacles.x = 400;
-  obstacles.y = floor;
-  obstacles.addChild(o1);
-  obstacles.addChild(o2);
-  obstacles.addChild(o3);
-  obstacles.addChild(o4);
-  obstacles.addChild(o5);
-  obstacles.addChild(o6);
-  obstacles.addChild(o7);
-  obstacles.addChild(o8);
-  obstacles.addChild(o9);
-
-  stage.addChild(obstacles);
-
-  obstacles.on('tick', function(event) {
-    if (event.paused) {
-      return;
-    }
-
-    var tickerEvent = event;
-    var delta = tickerEvent.delta;
-    obstacles.x -= delta / 1000 * 50;
-
-    if (obstacles.x <= -500) {
-      obstacles.x = 500;
-    }
-  });
-}
-
 function createStart() {
   start = new createjs.Container();
-  var startText = new createjs.Text('Click to Start', '48px Arial', '#F00');
+  var startText = new createjs.Text('Click to Start', '48px Arial', 'black');
+  var instructionText = new createjs.Text('Collect the rings!', '24px Arial', 'red');
+  instructionText.y = 50;
+
   var startBox = new createjs.Shape();
-  startBox.graphics.beginFill('white').drawRect(0, 0, 290, 50);
+  startBox.graphics.beginFill('white').drawRect(0, 0, 300, 100);
 
   start.addChild(startBox);
   start.addChild(startText);
+  start.addChild(instructionText);
   start.name = 'start';
   start.x = 200;
-  start.y = 150;
+  start.y = floor / 2;
   start.clicked = false;
 }
 
@@ -743,6 +674,7 @@ function createStage() {
   generateObstacles();
   createBullets();
   createObstacleBullets();
+  generateGoals();
 
   // interface
   createInterfaceContainer();
@@ -787,6 +719,9 @@ function handleHitObjects() {
       playerHit = true;
     } else if (o.parent === oBullets) {
       playerHit = true;
+    } else if (o.parent === goals){
+      o.alpha = 0;
+      goalsHit++;
     }
   }
 
@@ -828,6 +763,7 @@ function handleHitObjects() {
 function tick(event) {
   if (!createjs.Ticker.paused) {
     testLose();
+    testWin();
     handleHitObjects();
     updateScore();
   }
@@ -835,16 +771,36 @@ function tick(event) {
   // printMouse();
 }
 
+function testWin(){
+  // won
+  if (goalsHit >= GOALS) {
+    // display win
+    var winLabel;
+    winLabel = new createjs.Text('You got all the rings! You win!', '48px Arial', 'black');
+    winLabel.x = 50;
+    winLabel.y = 80;
+    winLabel.alpha = 0.9;
+    winLabel.name = 'winLabel';
+    stage.addChild(winLabel);
+    addStart();
+  }
+}
+
 function updateScore() {
   var scoreLabel = stage.getChildByName('scoreLabel');
   stage.removeChild(scoreLabel);
+  // createScore();
+
+  var goalLabel = stage.getChildByName('goalLabel');
+  stage.removeChild(goalLabel);
+
   createScore();
 }
 
-function playerOutOfBounds(){
+function playerOutOfBounds() {
   var ob = false;
 
-  if(player.x <= 0 || player.x >= wall || player.y <= 0 || player.y >= floor + 10){
+  if (player.x <= 0 || player.x >= wall || player.y <= 0 || player.y >= floor + 10) {
     ob = true;
   }
   return ob;
@@ -865,15 +821,14 @@ function testLose() {
   killedLabel.alpha = 0.5;
   killedLabel.name = 'killedLabel';
 
-
   // lose
   if (lose || playerOutOfBounds()) {
-    stage.addChild(loseLabel);
+    // stage.addChild(loseLabel);
     player.explode();
     player.health -= 5;
   } else {
     player.notExplode();
-    stage.removeChild(stage.getChildByName('loseLabel'));
+    // stage.removeChild(stage.getChildByName('loseLabel'));
   }
 
   // killed
@@ -885,9 +840,6 @@ function testLose() {
     timerLabel.alpha = 0.9;
     timerLabel.name = 'timerLabel';
     stage.addChild(timerLabel);
-
-    clearInterval(timerInterval);
-
     stage.removeChild(stage.getChildByName('loseLabel'));
 
     addStart();
@@ -897,12 +849,15 @@ function testLose() {
 function addStart() {
   stage.addChild(start);
   createjs.Ticker.paused = true;
+  clearInterval(timerInterval);
   // stage.tick();
 
   start.on('click', function() {
     start.clicked = true;
     createjs.Ticker.paused = false;
     player.health = FULL_HEALTH;
+    activeBulletCount = 0;
+    goalsHit = 0;
     createStage();
     startTimer();
   });
@@ -913,7 +868,6 @@ function startTimer() {
 
   timerInterval = setInterval(function() {
     timer = Math.round((new Date() - timerStart) / 1000, 0);
-    // console.log('timer: ' + timer);
   }, 1000);
 }
 
