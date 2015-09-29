@@ -35,7 +35,7 @@ function createScore() {
   stage.addChild(scoreLabel);
 
   var goalLabel;
-  goalLabel = new createjs.Text('Goals: ' + goalsHit + '/' + GOALS, '24px Arial', 'gold');
+  goalLabel = new createjs.Text('Rings: ' + goalsHit + '/' + GOALS, '24px Arial', 'gold');
   goalLabel.x = 5;
   goalLabel.y = 40;
   goalLabel.alpha = 0.9;
