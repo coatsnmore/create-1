@@ -776,7 +776,7 @@ function testWin(){
   if (goalsHit >= GOALS) {
     // display win
     var winLabel;
-    winLabel = new createjs.Text('You got all the rings! You win!', '48px Arial', 'black');
+    winLabel = new createjs.Text('You got all the rings! You win!', '48px Arial', 'white');
     winLabel.x = 50;
     winLabel.y = 80;
     winLabel.alpha = 0.9;
