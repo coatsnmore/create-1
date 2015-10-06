@@ -67,7 +67,7 @@ function createHealth() {
     var height = (player.health * INDICATOR_HEIGHT) / FULL_HEALTH;
 
     bar.graphics.clear();
-    bar.graphics.beginFill('red').drawRect(25, floor, 5, -height);
+    bar.graphics.beginFill('red').drawRect(25, floor, 15, -height);
   });
 
   stage.addChild(bar);
@@ -85,7 +85,7 @@ function createAmmo() {
     var height = ((MAX_BULLETS - activeBulletCount) * INDICATOR_HEIGHT) / MAX_BULLETS;
 
     ammo.graphics.clear();
-    ammo.graphics.beginFill('black').drawRect(50, floor, 5, -height);
+    ammo.graphics.beginFill('black').drawRect(40, floor, 15, -height);
   });
 
   stage.addChild(ammo);
@@ -97,11 +97,12 @@ function createObstacleBullets() {
   var BULLET_COUNT = 200;
 
   for (var i = 0; i < BULLET_COUNT; i++) {
-    var ob = new createjs.Shape();
+    // var ob = new createjs.Shape();
+    var ob = createLaserBlast();
     ob.name = 'ob:' + i;
-    ob.graphics.setStrokeStyle(2);
-    ob.graphics.beginStroke('red');
-    ob.graphics.drawCircle(0, 0, 5);
+    // ob.graphics.setStrokeStyle(2);
+    // ob.graphics.beginStroke('red');
+    // ob.graphics.drawCircle(0, 0, 5);
     ob.active = false;
     oBullets.addChild(ob);
   }
@@ -147,8 +148,10 @@ function createObstacleBullets() {
       var b = oBullets.children[j];
 
       if (b.active) {
+        var delta = event.delta;
+        b.x -= delta / 1000 * 150;
         b.alpha = 1;
-        b.x -= 5;
+        // b.x -= 5;
       }
 
       if (b.x <= -50) {
@@ -168,11 +171,12 @@ function createBullets() {
   bullets = new createjs.Container();
 
   for (var i = 0; i < MAX_BULLETS; i++) {
-    var bullet = new createjs.Shape();
+    var bullet = createLaserBlast();
+    // var bullet = new createjs.Shape();
+    // bullet.graphics.setStrokeStyle(2);
+    // bullet.graphics.beginStroke('white');
+    // bullet.graphics.drawCircle(0, 0, 5);
     bullet.name = 'bullet:' + i;
-    bullet.graphics.setStrokeStyle(2);
-    bullet.graphics.beginStroke('white');
-    bullet.graphics.drawCircle(0, 0, 5);
     bullet.active = false;
     bullet.alpha = 0;
     bullets.addChild(bullet);
@@ -209,11 +213,14 @@ function createBullets() {
 
 function createPlayer() {
   var FRICTION = 0.8,
-    SPEED = 4,
+    SPEED = 50,
     vX = 0,
-    vY = 0;
+    vY = 0,
+    ship = createShip();
 
   player = new createjs.Container();
+  player.sizeX = ship.sizeX;
+  player.sizeY = ship.sizeY;
 
   player.name = 'player';
   player.health = FULL_HEALTH;
@@ -230,9 +237,10 @@ function createPlayer() {
   player.x = 200;
   player.y = floor - 50;
 
-  player.addChild(shell2);
-  player.addChild(shell);
-  player.addChild(body);
+  // player.addChild(shell2);
+  // player.addChild(shell);
+  // player.addChild(body);
+  player.addChild(ship);
 
   stage.addChild(player);
 
@@ -265,16 +273,20 @@ function createPlayer() {
       }
     }
     if (keys[37]) {
-      if (vX > -SPEED) {
+      if (vX > -SPEED * 2) {
         vX--;
       }
     }
+    // console.log('SPEED: ' + SPEED);
 
     vY *= FRICTION;
     player.y += vY;
 
     vX *= FRICTION;
     player.x += vX;
+
+    // console.log('player.vX: ' + vX);
+    // console.log('player.vY: ' + vY);
 
   });
 
@@ -287,6 +299,8 @@ function createPlayer() {
     if (!little) {
       little = new createjs.Shape();
       little.alpha = 1;
+      little.x = player.sizeX / 2;
+      little.y = player.sizeY / 2;
     }
 
     little.graphics.setStrokeStyle(2);
@@ -297,6 +311,8 @@ function createPlayer() {
     if (!circle) {
       circle = new createjs.Shape();
       circle.alpha = 1;
+      circle.x = player.sizeX / 2;
+      circle.y = player.sizeY / 2;
     }
 
     circle.graphics.setStrokeStyle(2);
@@ -320,7 +336,7 @@ function createPlayer() {
     if (activeBulletCount < MAX_BULLETS) {
       activeBulletCount++;
       bullets.children[activeBulletCount].active = true;
-      bullets.children[activeBulletCount].x = player.x;
+      bullets.children[activeBulletCount].x = player.x + player.sizeX;
       bullets.children[activeBulletCount].y = player.y;
     }
   };
@@ -363,7 +379,7 @@ function createCircle() {
 function generateGoals() {
   var levelLength, SPACE, SIZE, START_X;
   SPACE = 400;
-  SIZE = 10;
+  SIZE = 128;
   START_X = 500;
   levelLength = LEVEL_LENGTH || 800;
 
@@ -375,11 +391,12 @@ function generateGoals() {
   // console.log('goal.x: ' + ((levelLength - START_X) / (SIZE + SPACE)));
 
   for (var i = 0; i < GOALS; i++) {
-    var goal = new createjs.Shape();
+    var goal = createRing();
+    // var goal = new createjs.Shape();
+    // goal.graphics.setStrokeStyle(5);
+    // goal.graphics.beginStroke('gold');
+    // goal.graphics.drawCircle(0, 0, SIZE);
     goal.name = 'goal:' + i;
-    goal.graphics.setStrokeStyle(5);
-    goal.graphics.beginStroke('gold');
-    goal.graphics.drawCircle(0, 0, SIZE);
     // goal.x = i * ((levelLength - START_X) / (SIZE + SPACE));
     goal.x = i * (SIZE + SPACE);
     goal.y = getRandomInt(0, -floor - 10);
@@ -387,7 +404,7 @@ function generateGoals() {
   }
 
   goals.on('tick', function(event) {
-    if(event.paused){
+    if (event.paused) {
       return;
     }
     goals.x -= event.delta / 1000 * 50;
@@ -400,7 +417,7 @@ function generateGoals() {
 
 function generateObstacles() {
   var o, x, y, SIZE, randomColor, OBSTACLE_COUNT, vX, vY, SPEED, FRICTION, OBSTACLE_START_X, VARIATIONS, SPACE;
-  OBSTACLE_START_X = 300;
+  OBSTACLE_START_X = 500;
   SIZE = 20;
   SPACE = 20;
   OBSTACLE_COUNT = ((wall - OBSTACLE_START_X) / (SIZE + SPACE)) + (OBSTACLE_START_X / (SIZE + SPACE));
@@ -425,11 +442,15 @@ function generateObstacles() {
   var obstaclesLength;
   for (var i = 0; i < OBSTACLE_COUNT; i++) {
     randomColor = colors.map[getRandomInt(0, colors.count)];
-
-    o = new createjs.Shape();
     x = i * (SIZE + SPACE + 10);
     y = getRandomInt(0, floor);
+
+    // o = createYeoman();
+    o = new createjs.Shape();
     o.graphics.beginFill(randomColor).drawRect(x, -y + SIZE, SIZE, -SIZE);
+    o.x = x;
+    o.y = -y;
+
     o.name = 'o' + i;
     o.leftx = x;
     o.middle = SIZE / 2;
@@ -440,12 +461,12 @@ function generateObstacles() {
     obstacles.addChild(o);
 
     o.explode = function() {
-      console.log('explode');
+      // console.log('explode');
       this.alpha = 0.75;
     };
 
     o.notExplode = function() {
-      console.log('not explode');
+      // console.log('not explode');
       this.alpha = 0;
     };
     // save x
@@ -471,12 +492,12 @@ function generateObstacles() {
     obstacles.addChild(o);
 
     o.explode = function() {
-      console.log('explode');
+      // console.log('explode');
       this.alpha = 0.75;
     };
 
     o.notExplode = function() {
-      console.log('not explode');
+      // console.log('not explode');
       this.alpha = 0;
     };
   }
@@ -662,6 +683,97 @@ function createStart() {
   start.clicked = false;
 }
 
+function createRing() {
+  var data = {
+    images: ['images/ring.png'],
+    frames: {
+      width: 256,
+      height: 256
+    },
+    animations: {
+      stand: 0
+    }
+  };
+  var spriteSheet = new createjs.SpriteSheet(data);
+  var stand = new createjs.Sprite(spriteSheet, 'stand');
+
+  stand.scaleY = stand.scaleX = 0.2;
+
+  return stand;
+}
+
+function createLaserBlast() {
+  var WIDTH = 64,
+    HEIGHT = 64,
+    SCALE = 0.3;
+
+  var data = {
+    images: ['images/laser_blast.png'],
+    frames: {
+      width: WIDTH,
+      height: HEIGHT
+    },
+    animations: {
+      stand: 0
+    }
+  };
+  var spriteSheet = new createjs.SpriteSheet(data);
+  var stand = new createjs.Sprite(spriteSheet, 'stand');
+  stand.sizeX = WIDTH * SCALE;
+  stand.sizeY = HEIGHT * SCALE;
+
+  stand.scaleY = stand.scaleX = SCALE;
+  // stage.addChild(stand);
+
+  return stand;
+}
+
+function createYeoman() {
+  var data = {
+    images: ['images/yeoman.png'],
+    frames: {
+      width: 180,
+      height: 180
+    },
+    animations: {
+      stand: 0
+    }
+  };
+  var spriteSheet = new createjs.SpriteSheet(data);
+  var stand = new createjs.Sprite(spriteSheet, 'stand');
+
+  stand.scaleY = stand.scaleX = 0.2;
+  // stage.addChild(stand);
+
+  return stand;
+}
+
+function createShip() {
+
+  var WIDTH = 64,
+    HEIGHT = 29,
+    SCALE = 0.75;
+
+  var data = {
+    images: ['images/Spritesheet_64x29.png'],
+    frames: {
+      width: WIDTH,
+      height: HEIGHT
+    },
+    animations: {
+      first: [0, 3, 'first', 0.5]
+    }
+  };
+  var spriteSheet = new createjs.SpriteSheet(data);
+  var first = new createjs.Sprite(spriteSheet, 'first');
+
+  first.scaleY = first.scaleX = SCALE;
+  first.sizeX = WIDTH * SCALE;
+  first.sizeY = HEIGHT * SCALE;
+
+  return first;
+}
+
 // basically reset
 function createStage() {
   score = 0;
@@ -672,6 +784,7 @@ function createStage() {
   generateBackgroundObstacles();
   createPlayer();
   generateObstacles();
+  createYeoman();
   createBullets();
   createObstacleBullets();
   generateGoals();
@@ -694,21 +807,7 @@ function init() {
 
 function handleHitObjects() {
 
-  //circle
-  // var mouseHits = stage.getObjectsUnderPoint(stage.mouseX, stage.mouseY, 0);
-  // var circleHit = false;
-  //
-  // for (var i = 0; i < mouseHits.length; i++) {
-  //   var o = mouseHits[i];
-  //   // console.log('name: ' + o.name);
-  //   if (o.parent === circleContainer) {
-  //     circleHit = true;
-  //   }
-  // }
-  //
-  // circleContainer.alpha = circleHit ? 0.5 : 1;
-
-  // stage hit player
+  // track player top left
   var playerhits = stage.getObjectsUnderPoint(player.x, player.y, 0);
   var playerHit = false;
 
@@ -719,16 +818,82 @@ function handleHitObjects() {
       playerHit = true;
     } else if (o.parent === oBullets) {
       playerHit = true;
-    } else if (o.parent === goals){
+    } else if (o.parent === goals) {
       o.alpha = 0;
       goalsHit++;
     }
   }
 
+  // test player top right
+  playerhits = stage.getObjectsUnderPoint(player.x + player.sizeX, player.y, 0);
+  // var playerHit = false;
+
+  // var o;
+  for (var j2 = 0; j2 < playerhits.length; j2++) {
+    o = playerhits[j2];
+    if (o.parent === obstacles) {
+      playerHit = true;
+    } else if (o.parent === oBullets) {
+      playerHit = true;
+    } else if (o.parent === goals) {
+      o.alpha = 0;
+      goalsHit++;
+    }
+  }
+
+  // test player bottom right
+  playerhits = stage.getObjectsUnderPoint(player.x + player.sizeX, player.y + player.sizeY, 0);
+
+  // var o;
+  for (j2 = 0; j2 < playerhits.length; j2++) {
+    o = playerhits[j2];
+    if (o.parent === obstacles) {
+      playerHit = true;
+    } else if (o.parent === oBullets) {
+      playerHit = true;
+    } else if (o.parent === goals) {
+      o.alpha = 0;
+      goalsHit++;
+    }
+  }
+
+  // test player bottom left
+  playerhits = stage.getObjectsUnderPoint(player.x, player.y + player.sizeY, 0);
+
+  // var o;
+  for (j2 = 0; j2 < playerhits.length; j2++) {
+    o = playerhits[j2];
+    if (o.parent === obstacles) {
+      playerHit = true;
+    } else if (o.parent === oBullets) {
+      playerHit = true;
+    } else if (o.parent === goals) {
+      o.alpha = 0;
+      goalsHit++;
+    }
+  }
+
+  // track obstacle bullets
+  // var oB;
+  // for(var n = 0; n < oBullets; n++){
+  //   oB = oBullets[n];
+  //   var oBHits = stage.getObjectsUnderPoint(oB.x, oB.y, 0);
+  //
+  //   console.log('oBHits: ' + oBHits);
+  //
+  //   for(var c = 0; c < oBHits; oBHits++){
+  //     var oBHit = oBHit[c];
+  //     if(oBHit.parent === player){
+  //       console.log('bullet hits player: ' + oBHits);
+  //       playerHit = true;
+  //     }
+  //   }
+  // }
+
   obstacles.alpha = playerHit ? 0.5 : 1;
   lose = playerHit ? true : false;
 
-  // player bullets hit stage
+  // track player bullets
   for (var k = 0; k < bullets.children.length; k++) {
     var b = bullets.children[k];
 
@@ -743,7 +908,7 @@ function handleHitObjects() {
       // console.log('name: ' + o.name);
       if (o.parent === obstacles) {
         bulletHit = true;
-        console.log('stage hit by bullet');
+        // console.log('stage hit by bullet');
         // o.alpha = 0;
         o.explode();
         o.notExplode();
@@ -771,7 +936,7 @@ function tick(event) {
   // printMouse();
 }
 
-function testWin(){
+function testWin() {
   // won
   if (goalsHit >= GOALS) {
     // display win
@@ -825,7 +990,7 @@ function testLose() {
   if (lose || playerOutOfBounds()) {
     // stage.addChild(loseLabel);
     player.explode();
-    player.health -= 5;
+    player.health--;
   } else {
     player.notExplode();
     // stage.removeChild(stage.getChildByName('loseLabel'));

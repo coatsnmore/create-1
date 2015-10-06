@@ -11,22 +11,28 @@ $icon-font-path: '../fonts/';
   padding: 0.2em 0;
 }
 
-.intro {
+.game-body {
   font: 14px courier;
 }
 
+.intro {
+
+}
+
 .intro h1 {
-  font: italic 28px courier;
+  border: medium dashed black;
+  padding: 30px;
 }
 
 .intro-section {
   float: left;
-  max-width: 200px;
-  min-width: 100px;
+  max-width: 32%;
+  min-width: 30%;
   min-height: 300px;
+  max-height: 90%;
   margin: 3px;
   padding: 15px;
-  border: medium dashed black;
+
 }
 
 .intro-section ol li{
@@ -37,6 +43,7 @@ $icon-font-path: '../fonts/';
 body {
   padding-top: 20px;
   padding-bottom: 20px;
+  font: italic 28px courier;
 }
 
 /* Everything but the jumbotron gets side spacing for mobile first views */
